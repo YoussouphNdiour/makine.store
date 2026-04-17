@@ -23,6 +23,7 @@ export async function POST(req: Request) {
 
     const customerPhone = phone || order.customerPhone
 
+    console.log('[OM] Initiation paiement:', { orderId, phone: customerPhone, amount: Math.round(order.totalAmount) })
     const result = await initiateOrangeMoneyPayment({
       amount: Math.round(order.totalAmount),
       currency: 'XOF',
@@ -32,13 +33,17 @@ export async function POST(req: Request) {
       notifUrl: `${appUrl}/api/payment/orange-money/webhook`,
       returnUrl: `${appUrl}/order/${orderId}/success`,
     })
+    console.log('[OM] Réponse:', JSON.stringify(result))
 
-    if (result?.payToken) {
-      await prisma.order.update({
-        where: { id: orderId },
-        data: { paymentRef: result.payToken },
-      })
+    if (!result?.payToken) {
+      console.error('[OM] Pas de payToken dans la réponse:', result)
+      return Response.json({ error: 'Réponse Orange Money invalide' }, { status: 502 })
     }
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { paymentRef: result.payToken },
+    })
 
     const amount = Math.round(order.totalAmount)
     const ref = orderId.slice(-8).toUpperCase()

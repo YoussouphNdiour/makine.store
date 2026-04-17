@@ -13,6 +13,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://makine.store'),
   title: "Makiné — L'élégance commence par une peau douce",
   description:
     "Cosmétiques naturels Makiné. Gammes corporelles, soins, huiles et savons pour tous les teints. Livraison France & Sénégal.",

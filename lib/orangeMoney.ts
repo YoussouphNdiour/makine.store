@@ -15,15 +15,24 @@ export async function getOrangeMoneyToken(): Promise<string> {
     `${requireEnv('ORANGE_MONEY_CLIENT_ID')}:${requireEnv('ORANGE_MONEY_CLIENT_SECRET')}`
   ).toString('base64')
 
-  const res = await fetch(`${requireEnv('ORANGE_MONEY_BASE_URL')}/oauth/v3/token`, {
+  // ORANGE_MONEY_TOKEN_URL can override the token endpoint if the base URL path differs
+  const tokenUrl = process.env.ORANGE_MONEY_TOKEN_URL
+    ?? `${requireEnv('ORANGE_MONEY_BASE_URL')}/oauth/v3/token`
+
+  console.log('[OM] Token URL:', tokenUrl)
+  const res = await fetch(tokenUrl, {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${creds}`,
       'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
     },
     body: 'grant_type=client_credentials',
   })
-  if (!res.ok) throw new Error(`[OrangeMoney] Auth échouée : HTTP ${res.status}`)
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`[OrangeMoney] Auth échouée : HTTP ${res.status} — ${body}`)
+  }
 
   const data = await res.json()
   cachedToken = {
@@ -43,7 +52,8 @@ async function callCashIn(params: {
   returnUrl: string
   token: string
 }) {
-  const phone = params.customerPhone.replace(/^\+/, '')
+  // Remove all non-digits: "+221 77 000 00 00" → "22177000000"
+  const phone = params.customerPhone.replace(/\D/g, '')
   const res = await fetch(`${requireEnv('ORANGE_MONEY_BASE_URL')}/payment/v1/cashIn`, {
     method: 'POST',
     headers: {
@@ -85,7 +95,10 @@ export async function initiateOrangeMoneyPayment(params: {
     res = await callCashIn({ ...params, token: freshToken })
   }
 
-  if (!res.ok) throw new Error(`[OrangeMoney] HTTP ${res.status}`)
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '')
+    throw new Error(`[OrangeMoney] HTTP ${res.status} — ${errBody}`)
+  }
   return res.json()
 }
 

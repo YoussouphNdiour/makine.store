@@ -15,6 +15,11 @@ function getHeaders() {
   }
 }
 
+// Normalize phone: remove spaces, dashes, parentheses — keep digits and optional leading +
+function normalizePhone(to: string): string {
+  return to.replace(/[\s\-\(\)\.]/g, '')
+}
+
 // POST /api/send-message — texte
 // Body: { to: "+221...", text: "..." }
 export async function sendWhatsAppText(to: string, text: string): Promise<void> {
@@ -22,7 +27,7 @@ export async function sendWhatsAppText(to: string, text: string): Promise<void> 
   const res = await fetch(`${WA_BASE}/send-message`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ to, text }),
+    body: JSON.stringify({ to: normalizePhone(to), text }),
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
@@ -36,7 +41,7 @@ export async function sendWhatsAppImage(to: string, imageUrl: string, caption: s
   const res = await fetch(`${WA_BASE}/send-message`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ to, imageUrl, text: caption }),
+    body: JSON.stringify({ to: normalizePhone(to), imageUrl, text: caption }),
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
