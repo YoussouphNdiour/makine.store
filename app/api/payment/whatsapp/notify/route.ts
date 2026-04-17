@@ -40,7 +40,9 @@ export async function POST(req: Request) {
       `📞 Un conseiller Makiné va vous contacter sous peu pour organiser le paiement et la livraison.\n\n` +
       `Merci pour votre confiance ! *Makiné* 🌸`
 
-    // Message à l'admin
+    // Message à l'admin avec lien de confirmation
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://makine.store'
+    const confirmUrl = `${appUrl}/api/admin/confirm?ref=${ref}&key=${process.env.ADMIN_PASSWORD ?? ''}`
     const adminMsg =
       `🆕 *Nouvelle commande WhatsApp !*\n` +
       `📦 Réf : *${ref}*\n` +
@@ -48,7 +50,7 @@ export async function POST(req: Request) {
       `${itemsText}\n\n` +
       `💰 *Total : ${total}*\n` +
       `💳 Paiement : WhatsApp\n\n` +
-      `_Voir admin : ${process.env.NEXT_PUBLIC_APP_URL ?? 'https://makine.store'}/admin_`
+      `👇 *Confirmer la commande :*\n${confirmUrl}`
 
     // Envoyer les deux messages en parallèle
     const customerPhone = order.customerPhone.replace(/\D/g, '')

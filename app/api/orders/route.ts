@@ -117,16 +117,20 @@ export async function POST(req: Request) {
     const payLabel: Record<string, string> = {
       wave: '💙 Wave', orange_money: '🟠 Orange Money', whatsapp: '💬 WhatsApp', cash: '💵 Espèces',
     }
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://makine.store'
+    const adminKey = process.env.ADMIN_PASSWORD ?? ''
+    const confirmUrl = `${appUrl}/api/admin/confirm?ref=${ref}&key=${adminKey}`
+
     sendWhatsAppText(
       ADMIN_NUMBER,
       `🆕 *Nouvelle commande Makiné !*\n` +
       `📦 Réf : *${ref}*\n` +
       `👤 ${customerName} — ${customerPhone}\n` +
-      `📍 ${address ?? 'Adresse non précisée'}\n\n` +
+      `📍 ${address ?? 'Non précisée'}\n\n` +
       `${itemsText}\n\n` +
       `💰 *Total : ${total}*\n` +
       `💳 ${payLabel[paymentMethod] ?? paymentMethod}\n\n` +
-      `_Voir admin : ${process.env.NEXT_PUBLIC_APP_URL ?? 'https://makine.store'}/admin_`
+      `👇 *Confirmer la commande :*\n${confirmUrl}`
     ).catch(e => console.error('[WA Admin notify]', e))
 
     return Response.json({ orderId: order.id })

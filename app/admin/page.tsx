@@ -122,7 +122,7 @@ const statusColors: Record<string, string> = {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: { key?: string; filter?: string; status?: string }
+  searchParams: { key?: string; filter?: string; status?: string; confirmed?: string }
 }) {
   const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin_dev'
   const isAuth = searchParams.key === adminPassword
@@ -141,6 +141,17 @@ export default async function AdminPage({
   return (
     <AdminShell adminKey={searchParams.key} currentPath="/admin">
       <div className="max-w-7xl mx-auto px-4 py-6">
+
+        {/* ── Toast confirmation après lien WhatsApp ── */}
+        {searchParams.confirmed && (
+          <div className="mb-4 bg-green-50 border border-green-200 rounded-xl px-5 py-3 flex items-center gap-3 text-green-800">
+            <span className="text-xl">✅</span>
+            <div>
+              <p className="font-semibold text-sm">Commande <code className="bg-green-100 px-1.5 py-0.5 rounded">{searchParams.confirmed}</code> confirmée !</p>
+              <p className="text-xs text-green-600">Le client a été notifié par WhatsApp.</p>
+            </div>
+          </div>
+        )}
 
         {/* ── Page header with CSV export ── */}
         <div className="flex items-center justify-between mb-6">

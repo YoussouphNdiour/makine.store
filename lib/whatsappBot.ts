@@ -87,9 +87,12 @@ async function notifyAdmin(order: {
     order.currency === 'XOF'
       ? `${order.totalAmount.toLocaleString('fr-FR')} FCFA`
       : `${order.totalAmount.toFixed(2)} €`
+  const ref = order.id.slice(-8).toUpperCase()
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://makine.store'
+  const confirmUrl = `${appUrl}/api/admin/confirm?ref=${ref}&key=${process.env.ADMIN_PASSWORD ?? ''}`
   await sendWhatsAppText(
     ADMIN_NUMBER,
-    `🆕 *Nouvelle commande Makiné !*\n📦 Réf : *${order.id.slice(-8).toUpperCase()}*\n👤 ${order.customerName} — ${order.customerPhone}\n\n${items}\n\n💰 *Total : ${total}*\n💳 ${order.paymentMethod}\n\n_Voir admin : https://makine.store/admin_`
+    `🆕 *Nouvelle commande Makiné !*\n📦 Réf : *${ref}*\n👤 ${order.customerName} — ${order.customerPhone}\n\n${items}\n\n💰 *Total : ${total}*\n💳 ${order.paymentMethod}\n\n👇 *Confirmer la commande :*\n${confirmUrl}`
   )
 }
 
