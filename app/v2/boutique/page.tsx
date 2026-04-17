@@ -1,25 +1,33 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { products, type Product } from '@/data/products'
 import { getProductImageUrl } from '@/data/productImages'
 import HeaderV2 from '@/components/HeaderV2'
 import FooterV2 from '@/components/FooterV2'
 
-const CATEGORIES = [
-  { key: 'all',   label: 'Tout',   count: products.length },
-  { key: 'gamme', label: 'Gammes', count: products.filter(p => p.category === 'gamme').length },
-  { key: 'soins', label: 'Soins',  count: products.filter(p => p.category === 'soins').length },
-  { key: 'huile', label: 'Huiles', count: products.filter(p => p.category === 'huile').length },
-  { key: 'savon', label: 'Savons', count: products.filter(p => p.category === 'savon').length },
-]
+export type StoreProduct = {
+  id: string
+  slug: string
+  name: string
+  category: string
+  price: number
+  priceXOF: number
+  priceXOF2?: number | null
+  badge?: string | null
+  description: string
+  inStock: boolean
+  wholesale: boolean
+  imageUrl?: string | null
+}
 
-function formatPrice(p: Product) {
-  if (p.priceXOF === 0 && p.price === 0) return 'Prix sur demande'
-  if (p.priceXOF > 0) return `${p.priceXOF.toLocaleString('fr-FR')} FCFA`
-  return `${p.price.toFixed(2)} €`
+const CATEGORY_LABELS: Record<string, string> = {
+  gamme: 'Gammes',
+  soins: 'Soins',
+  huile: 'Huiles',
+  savon: 'Savons',
+  maquillage: 'Maquillage',
 }
 
 const BADGE_STYLE: Record<string, string> = {
@@ -29,10 +37,40 @@ const BADGE_STYLE: Record<string, string> = {
   Promo:      'bg-red-400 text-white',
 }
 
+function formatPrice(p: StoreProduct) {
+  if (p.priceXOF === 0 && p.price === 0) return 'Prix sur demande'
+  if (p.priceXOF > 0) return `${p.priceXOF.toLocaleString('fr-FR')} FCFA`
+  return `${p.price.toFixed(2)} €`
+}
+
+function getImgUrl(p: StoreProduct) {
+  return p.imageUrl || getProductImageUrl(p.slug)
+}
+
 export default function BoutiqueV2Page() {
+  const [products, setProducts] = useState<StoreProduct[]>([])
+  const [loading, setLoading] = useState(true)
   const [cat, setCat] = useState('all')
   const [wholesale, setWholesale] = useState(false)
   const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    fetch('/api/products')
+      .then(r => r.json())
+      .then(data => { setProducts(Array.isArray(data) ? data : []); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  // Catégories dynamiques selon les produits chargés
+  const cats = Array.from(new Set(products.map(p => p.category)))
+  const CATEGORIES = [
+    { key: 'all', label: 'Tout', count: products.length },
+    ...cats.map(c => ({
+      key: c,
+      label: CATEGORY_LABELS[c] ?? c,
+      count: products.filter(p => p.category === c).length,
+    })),
+  ]
 
   const filtered = products.filter(p => {
     if (cat !== 'all' && p.category !== cat) return false
@@ -55,18 +93,16 @@ export default function BoutiqueV2Page() {
             Notre Boutique
           </h1>
           <p className="text-rose-muted mt-3 text-base max-w-xl">
-            {products.length} soins naturels pour sublimer votre peau
+            {loading ? 'Chargement…' : `${products.length} soins naturels pour sublimer votre peau`}
           </p>
         </div>
       </section>
 
-      {/* Rose line separator */}
       <div className="rose-line mx-5 lg:mx-8 opacity-40" />
 
       {/* Sticky filters */}
       <div className="sticky top-0 z-40 bg-rose-snow/95 backdrop-blur-md border-b border-rose-blush/30">
         <div className="max-w-7xl mx-auto px-5 lg:px-8 py-4 flex flex-wrap gap-3 items-center">
-          {/* Category pills */}
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map(c => (
               <button
@@ -121,7 +157,20 @@ export default function BoutiqueV2Page() {
 
       {/* Product grid */}
       <main className="max-w-7xl mx-auto px-5 lg:px-8 py-12">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-white rounded-3xl overflow-hidden shadow-rose-card border border-rose-petal/60 animate-pulse">
+                <div className="h-64 bg-rose-petal/40" />
+                <div className="p-5 space-y-3">
+                  <div className="h-3 bg-rose-petal rounded w-1/3" />
+                  <div className="h-4 bg-rose-petal rounded w-3/4" />
+                  <div className="h-4 bg-rose-petal rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-24 text-rose-muted">
             <div className="w-20 h-20 rounded-full bg-rose-petal flex items-center justify-center mx-auto mb-6">
               <span className="text-4xl">🌸</span>
@@ -145,7 +194,7 @@ export default function BoutiqueV2Page() {
                 {/* Image */}
                 <div className="relative h-64 bg-rose-petal overflow-hidden">
                   <Image
-                    src={getProductImageUrl(product.slug)}
+                    src={getImgUrl(product)}
                     alt={product.name}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
@@ -170,7 +219,6 @@ export default function BoutiqueV2Page() {
                       </span>
                     </div>
                   )}
-                  {/* CTA on hover */}
                   <div className="absolute inset-0 flex items-end justify-center pb-5 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10">
                     <span className="bg-white text-rose-deep text-xs font-bold px-4 py-2 rounded-full shadow-rose-sm translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                       Voir le produit →
@@ -181,16 +229,11 @@ export default function BoutiqueV2Page() {
                 {/* Info */}
                 <div className="p-5">
                   <p className="text-xs text-rose-medium uppercase tracking-wider mb-1 font-medium">
-                    {product.category}
+                    {CATEGORY_LABELS[product.category] ?? product.category}
                   </p>
                   <h2 className="font-serif font-semibold text-base text-rose-wine leading-snug mb-1 group-hover:text-rose-deep transition-colors line-clamp-2">
                     {product.name}
                   </h2>
-                  {product.contents && (
-                    <p className="text-xs text-rose-muted/70 mb-3 truncate">
-                      {product.contents.join(' · ')}
-                    </p>
-                  )}
                   <div className="flex items-baseline justify-between mt-2">
                     <p className="font-bold text-rose-deep text-base">{formatPrice(product)}</p>
                     {product.price > 0 && product.priceXOF > 0 && (

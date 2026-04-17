@@ -1,37 +1,48 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { products, type Product } from '@/data/products'
+import { products as staticProducts } from '@/data/products'
 import { getProductImageUrl } from '@/data/productImages'
+
+type AnyProduct = {
+  id: string
+  slug: string
+  name: string
+  category: string
+  price: number
+  priceXOF: number
+  priceXOF2?: number | null
+  badge?: string | null
+  description: string
+  inStock: boolean
+  wholesale: boolean
+  imageUrl?: string | null
+}
 
 type CartItem = { productId: string; quantity: number }
 
-function getCartFromUrl(slug?: string | null): CartItem[] {
-  if (slug) {
-    const product = products.find((p) => p.slug === slug)
-    if (product) return [{ productId: product.id, quantity: 1 }]
-  }
-  return []
-}
-
-function formatPrice(p: Product, country: string) {
-  if (country === 'SN') return p.priceXOF === 0 ? null : p.priceXOF
-  return p.price === 0 ? null : p.price
+function getImgUrl(p: AnyProduct) {
+  return p.imageUrl || getProductImageUrl(p.slug)
 }
 
 function CheckoutContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const slug = searchParams.get('product')
+  const productIdFromUrl = searchParams.get('product')
 
-  const [cart, setCart] = useState<CartItem[]>(getCartFromUrl(slug))
+  // Tous les produits = statiques + DB
+  const [allProducts, setAllProducts] = useState<AnyProduct[]>(staticProducts as AnyProduct[])
+  const [productsLoaded, setProductsLoaded] = useState(false)
+
+  const [cart, setCart] = useState<CartItem[]>([])
   const [country, setCountry] = useState<'SN' | 'FR'>('SN')
   const [step, setStep] = useState<'cart' | 'info' | 'payment'>('cart')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showAllProducts, setShowAllProducts] = useState(false)
 
   const [form, setForm] = useState({
     name: '',
@@ -44,33 +55,72 @@ function CheckoutContent() {
 
   const currency = country === 'SN' ? 'FCFA' : '€'
 
-  function getItemPrice(p: Product) {
+  // Charger les produits DB et initialiser le panier
+  useEffect(() => {
+    fetch('/api/products')
+      .then(r => r.json())
+      .then((dbProducts: AnyProduct[]) => {
+        if (!Array.isArray(dbProducts)) return
+        // Fusionner : DB en priorité, statiques en fallback pour les ID manquants
+        const merged = [...dbProducts]
+        for (const sp of staticProducts as AnyProduct[]) {
+          if (!merged.some(p => p.id === sp.id || p.slug === sp.slug)) {
+            merged.push(sp)
+          }
+        }
+        setAllProducts(merged)
+        setProductsLoaded(true)
+        // Initialiser le panier avec le produit de l'URL (cherche par ID ou slug)
+        if (productIdFromUrl) {
+          const found = merged.find(p => p.id === productIdFromUrl || p.slug === productIdFromUrl)
+          if (found) {
+            setCart([{ productId: found.id, quantity: 1 }])
+          }
+        }
+      })
+      .catch(() => {
+        // Fallback statique : cherche par ID ou slug
+        if (productIdFromUrl) {
+          const found = (staticProducts as AnyProduct[]).find(
+            p => p.id === productIdFromUrl || p.slug === productIdFromUrl
+          )
+          if (found) setCart([{ productId: found.id, quantity: 1 }])
+        }
+        setProductsLoaded(true)
+      })
+  }, [productIdFromUrl])
+
+  function findProduct(id: string): AnyProduct | undefined {
+    return allProducts.find(p => p.id === id)
+  }
+
+  function getItemPrice(p: AnyProduct) {
     return country === 'SN' ? p.priceXOF : p.price
   }
 
   function calcTotal() {
     return cart.reduce((acc, item) => {
-      const p = products.find((pr) => pr.id === item.productId)
+      const p = findProduct(item.productId)
       if (!p) return acc
       return acc + getItemPrice(p) * item.quantity
     }, 0)
   }
 
   function addProduct(productId: string) {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.productId === productId)
-      if (existing) return prev.map((i) => i.productId === productId ? { ...i, quantity: i.quantity + 1 } : i)
+    setCart(prev => {
+      const existing = prev.find(i => i.productId === productId)
+      if (existing) return prev.map(i => i.productId === productId ? { ...i, quantity: i.quantity + 1 } : i)
       return [...prev, { productId, quantity: 1 }]
     })
   }
 
   function removeProduct(productId: string) {
-    setCart((prev) => prev.filter((i) => i.productId !== productId))
+    setCart(prev => prev.filter(i => i.productId !== productId))
   }
 
   function updateQuantity(productId: string, qty: number) {
     if (qty <= 0) { removeProduct(productId); return }
-    setCart((prev) => prev.map((i) => i.productId === productId ? { ...i, quantity: qty } : i))
+    setCart(prev => prev.map(i => i.productId === productId ? { ...i, quantity: qty } : i))
   }
 
   async function handleSubmit() {
@@ -92,17 +142,12 @@ function CheckoutContent() {
     setError('')
 
     try {
-      const total = calcTotal()
-      const EUR_TO_XOF = 655.957 // parité fixe CFA
-
-      // Prix unitaires selon la devise du client
-      const itemsPayload = cart.map((item) => {
-        const p = products.find((pr) => pr.id === item.productId)
+      const itemsPayload = cart.map(item => {
+        const p = findProduct(item.productId)
         const price = country === 'SN' ? (p?.priceXOF ?? 0) : (p?.price ?? 0)
         return { productId: item.productId, quantity: item.quantity, price }
       })
 
-      // Créer la commande (total recalculé côté serveur)
       const orderRes = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -122,7 +167,6 @@ function CheckoutContent() {
       const { orderId } = await orderRes.json()
 
       if (paymentMethod === 'wave') {
-        // Montant récupéré depuis la DB par l'API Wave
         const waveRes = await fetch('/api/payment/wave/checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -132,14 +176,12 @@ function CheckoutContent() {
         const { wave_launch_url } = await waveRes.json()
         window.location.href = wave_launch_url
       } else {
-        // Orange Money — vérifier que l'init réussit avant de rediriger
         const omRes = await fetch('/api/payment/orange-money/initiate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId, phone: form.phone }),
         })
         if (!omRes.ok) throw new Error('Erreur Orange Money')
-        // Orange Money = paiement initié sur le téléphone du client → page d'attente
         router.push(`/order/${orderId}/success`)
       }
     } catch (err) {
@@ -151,6 +193,8 @@ function CheckoutContent() {
   }
 
   const total = calcTotal()
+  const availableProducts = allProducts.filter(p => p.inStock && !cart.some(i => i.productId === p.id))
+  const displayedProducts = showAllProducts ? availableProducts : availableProducts.slice(0, 6)
 
   return (
     <main className="min-h-screen bg-rose-snow">
@@ -212,24 +256,34 @@ function CheckoutContent() {
                   </div>
                 </div>
 
-                {cart.length === 0 ? (
+                {/* Chargement */}
+                {!productsLoaded && cart.length === 0 && (
+                  <div className="text-center py-8 text-gray-400">
+                    <div className="w-6 h-6 border-2 border-rose-deep border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                    <p className="text-sm">Chargement du panier…</p>
+                  </div>
+                )}
+
+                {productsLoaded && cart.length === 0 && (
                   <div className="text-center py-12 text-gray-400">
                     <p className="text-lg mb-4">Votre panier est vide</p>
                     <Link href="/v2/boutique" className="text-rose-deep hover:underline">
                       Voir la boutique →
                     </Link>
                   </div>
-                ) : (
+                )}
+
+                {cart.length > 0 && (
                   <div className="space-y-4">
-                    {cart.map((item) => {
-                      const p = products.find((pr) => pr.id === item.productId)
+                    {cart.map(item => {
+                      const p = findProduct(item.productId)
                       if (!p) return null
                       const price = getItemPrice(p)
                       return (
                         <div key={item.productId} className="flex items-center gap-4 p-4 bg-rose-snow rounded-xl">
                           <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-rose-petal flex-shrink-0">
                             <Image
-                              src={getProductImageUrl(p.slug)}
+                              src={getImgUrl(p)}
                               alt={p.name}
                               fill
                               className="object-cover"
@@ -268,24 +322,45 @@ function CheckoutContent() {
                   </div>
                 )}
 
-                {/* Ajouter un produit */}
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <p className="text-sm font-medium mb-3 text-gray-600">Ajouter un produit :</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {products.filter((p) => p.inStock).slice(0, 6).map((p) => (
+                {/* Ajouter d'autres produits */}
+                {productsLoaded && availableProducts.length > 0 && (
+                  <div className="mt-6 pt-6 border-t border-gray-100">
+                    <p className="text-sm font-medium mb-3 text-gray-600">
+                      Ajouter un produit à votre commande :
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {displayedProducts.map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => addProduct(p.id)}
+                          className="text-left p-3 rounded-xl border border-gray-100 hover:border-rose-deep hover:bg-rose-petal/30 transition-colors group"
+                        >
+                          <div className="relative w-full h-20 rounded-lg overflow-hidden bg-rose-petal mb-2">
+                            <Image
+                              src={getImgUrl(p)}
+                              alt={p.name}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                          <p className="text-xs font-medium truncate">{p.name}</p>
+                          <p className="text-xs text-rose-deep mt-0.5">
+                            {getItemPrice(p) === 0 ? 'Sur demande' : `${getItemPrice(p).toLocaleString('fr-FR')} ${currency}`}
+                          </p>
+                          <p className="text-xs text-rose-deep font-semibold mt-1">+ Ajouter</p>
+                        </button>
+                      ))}
+                    </div>
+                    {availableProducts.length > 6 && (
                       <button
-                        key={p.id}
-                        onClick={() => addProduct(p.id)}
-                        className="text-left p-2 rounded-lg border border-gray-100 hover:border-rose-deep hover:bg-rose-petal transition-colors text-xs"
+                        onClick={() => setShowAllProducts(!showAllProducts)}
+                        className="mt-3 text-xs text-rose-deep hover:underline w-full text-center"
                       >
-                        <p className="font-medium truncate">{p.name}</p>
-                        <p className="text-rose-deep">
-                          {getItemPrice(p) === 0 ? 'Sur demande' : `${getItemPrice(p).toLocaleString('fr-FR')} ${currency}`}
-                        </p>
+                        {showAllProducts ? 'Voir moins' : `Voir tous les produits (${availableProducts.length})`}
                       </button>
-                    ))}
+                    )}
                   </div>
-                </div>
+                )}
 
                 <button
                   disabled={cart.length === 0}
@@ -309,7 +384,7 @@ function CheckoutContent() {
                     <input
                       type="text"
                       value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      onChange={e => setForm({ ...form, name: e.target.value })}
                       placeholder="Prénom Nom"
                       className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-rose-deep transition-colors"
                     />
@@ -321,7 +396,7 @@ function CheckoutContent() {
                     <input
                       type="tel"
                       value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      onChange={e => setForm({ ...form, phone: e.target.value })}
                       placeholder="+221 70 000 00 00"
                       className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-rose-deep transition-colors"
                     />
@@ -331,7 +406,7 @@ function CheckoutContent() {
                     <input
                       type="email"
                       value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      onChange={e => setForm({ ...form, email: e.target.value })}
                       placeholder="votre@email.com"
                       className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-rose-deep transition-colors"
                     />
@@ -340,7 +415,7 @@ function CheckoutContent() {
                     <label className="block text-sm font-medium mb-1">Adresse de livraison (optionnel)</label>
                     <textarea
                       value={form.address}
-                      onChange={(e) => setForm({ ...form, address: e.target.value })}
+                      onChange={e => setForm({ ...form, address: e.target.value })}
                       placeholder="Quartier, ville..."
                       rows={2}
                       className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-rose-deep transition-colors resize-none"
@@ -368,7 +443,7 @@ function CheckoutContent() {
                       setError('')
                       setStep('payment')
                     }}
-                    className="flex-2 flex-1 bg-rose-deep text-white py-3 rounded-xl font-medium hover:bg-rose-wine transition-colors"
+                    className="flex-1 bg-rose-deep text-white py-3 rounded-xl font-medium hover:bg-rose-wine transition-colors"
                   >
                     Continuer →
                   </button>
@@ -383,13 +458,7 @@ function CheckoutContent() {
 
                 <div className="space-y-3 mb-6">
                   <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-colors ${paymentMethod === 'wave' ? 'border-wave-blue bg-blue-50' : 'border-gray-100 hover:border-gray-200'}`}>
-                    <input
-                      type="radio"
-                      value="wave"
-                      checked={paymentMethod === 'wave'}
-                      onChange={() => setPaymentMethod('wave')}
-                      className="sr-only"
-                    />
+                    <input type="radio" value="wave" checked={paymentMethod === 'wave'} onChange={() => setPaymentMethod('wave')} className="sr-only" />
                     <div className="w-10 h-10 rounded-full bg-wave-blue flex items-center justify-center text-white font-bold text-sm flex-shrink-0">W</div>
                     <div>
                       <p className="font-semibold">Wave 💙</p>
@@ -399,13 +468,7 @@ function CheckoutContent() {
                   </label>
 
                   <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-colors ${paymentMethod === 'orange_money' ? 'border-om-orange bg-orange-50' : 'border-gray-100 hover:border-gray-200'}`}>
-                    <input
-                      type="radio"
-                      value="orange_money"
-                      checked={paymentMethod === 'orange_money'}
-                      onChange={() => setPaymentMethod('orange_money')}
-                      className="sr-only"
-                    />
+                    <input type="radio" value="orange_money" checked={paymentMethod === 'orange_money'} onChange={() => setPaymentMethod('orange_money')} className="sr-only" />
                     <div className="w-10 h-10 rounded-full bg-om-orange flex items-center justify-center text-white font-bold text-sm flex-shrink-0">OM</div>
                     <div>
                       <p className="font-semibold">Orange Money 🟠</p>
@@ -415,7 +478,7 @@ function CheckoutContent() {
                   </label>
 
                   <a
-                    href={`https://wa.me/221710581711?text=${encodeURIComponent('Bonjour, je souhaite commander. Voici mon panier :\n' + cart.map((i) => { const p = products.find((pr) => pr.id === i.productId); return p ? `• ${p.name} x${i.quantity}` : '' }).join('\n'))}`}
+                    href={`https://wa.me/221710581711?text=${encodeURIComponent('Bonjour, je souhaite commander. Voici mon panier :\n' + cart.map(i => { const p = findProduct(i.productId); return p ? `• ${p.name} x${i.quantity}` : '' }).join('\n'))}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-4 p-4 rounded-xl border-2 border-gray-100 hover:border-green-300 hover:bg-green-50 transition-colors"
@@ -457,9 +520,7 @@ function CheckoutContent() {
                         </svg>
                         Traitement...
                       </>
-                    ) : (
-                      'Payer maintenant'
-                    )}
+                    ) : 'Payer maintenant'}
                   </button>
                 </div>
               </div>
@@ -475,8 +536,8 @@ function CheckoutContent() {
                 <p className="text-sm text-gray-400">Panier vide</p>
               ) : (
                 <div className="space-y-3">
-                  {cart.map((item) => {
-                    const p = products.find((pr) => pr.id === item.productId)
+                  {cart.map(item => {
+                    const p = findProduct(item.productId)
                     if (!p) return null
                     const price = getItemPrice(p)
                     return (

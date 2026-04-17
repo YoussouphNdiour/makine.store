@@ -2,21 +2,59 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { products } from '@/data/products'
+import { prisma } from '@/lib/prisma'
+import { products as staticProducts } from '@/data/products'
 import { getProductImageUrl } from '@/data/productImages'
 import HeaderV2 from '@/components/HeaderV2'
 import FooterV2 from '@/components/FooterV2'
 
-export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }))
+export const dynamic = 'force-dynamic'
+
+type PageProduct = {
+  id: string
+  slug: string
+  name: string
+  category: string
+  price: number
+  priceXOF: number
+  priceXOF2?: number | null
+  badge?: string | null
+  description: string
+  inStock: boolean
+  wholesale: boolean
+  imageUrl?: string | null
+  contents?: string[]
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const product = products.find((p) => p.slug === params.slug)
+async function getProduct(slug: string): Promise<PageProduct | null> {
+  try {
+    const db = await prisma.product.findUnique({ where: { slug } })
+    if (db) return db
+  } catch { /* DB not available */ }
+  const s = staticProducts.find(p => p.slug === slug)
+  return s ?? null
+}
+
+async function getRelated(category: string, excludeId: string): Promise<PageProduct[]> {
+  try {
+    const db = await prisma.product.findMany({
+      where: { category, id: { not: excludeId } },
+      take: 4,
+      orderBy: { inStock: 'desc' },
+    })
+    if (db.length) return db
+  } catch { /* fallback */ }
+  return staticProducts
+    .filter(p => p.category === category && p.id !== excludeId)
+    .slice(0, 4)
+}
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const product = await getProduct(params.slug)
   if (!product) return { title: 'Produit introuvable' }
 
   const priceLabel =
-    product.priceXOF > 0
+    product.priceXOF && product.priceXOF > 0
       ? `${product.priceXOF.toLocaleString('fr-FR')} FCFA`
       : product.price > 0
       ? `${product.price.toFixed(2)} €`
@@ -29,11 +67,16 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       title: `${product.name} | Makiné`,
       description: `${product.description} — ${priceLabel}.`,
       images: [
+        product.imageUrl ||
         `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/images/products/${params.slug}.jpg`,
       ],
       type: 'website',
     },
   }
+}
+
+function getImgUrl(p: PageProduct) {
+  return p.imageUrl || getProductImageUrl(p.slug)
 }
 
 const WA_ICON = (
@@ -47,6 +90,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   soins: 'Soin Visage',
   huile: 'Huile Précieuse',
   savon: 'Savon Artisanal',
+  maquillage: 'Maquillage',
 }
 
 const BADGE_STYLE: Record<string, string> = {
@@ -56,13 +100,11 @@ const BADGE_STYLE: Record<string, string> = {
   Promo:      'bg-red-400 text-white',
 }
 
-export default function ProductV2Page({ params }: { params: { slug: string } }) {
-  const product = products.find((p) => p.slug === params.slug)
+export default async function ProductV2Page({ params }: { params: { slug: string } }) {
+  const product = await getProduct(params.slug)
   if (!product) notFound()
 
-  const related = products
-    .filter(p => p.category === product.category && p.id !== product.id)
-    .slice(0, 4)
+  const related = await getRelated(product.category, product.id)
 
   const waMessage = encodeURIComponent(
     `Bonjour, je suis intéressé(e) par : ${product.name}\nPrix : ${product.priceXOF > 0 ? `${product.priceXOF.toLocaleString('fr-FR')} FCFA` : 'Prix sur demande'}`
@@ -90,18 +132,16 @@ export default function ProductV2Page({ params }: { params: { slug: string } }) 
 
             {/* Image panel */}
             <div className="relative">
-              {/* Decorative rose blur behind image */}
               <div className="petal-blur w-80 h-80 bg-rose-blush/40 -top-8 -left-8" style={{ position: 'absolute' }} />
               <div className="relative aspect-square rounded-[2.5rem] overflow-hidden bg-rose-petal shadow-rose-lg border border-rose-blush/30">
                 <Image
-                  src={getProductImageUrl(product.slug)}
+                  src={getImgUrl(product)}
                   alt={product.name}
                   fill
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
                   priority
                 />
-                {/* Rose film */}
                 <div className="absolute inset-0 bg-rose-deep/5 mix-blend-multiply" />
                 {product.badge && (
                   <div className="absolute top-5 left-5">
@@ -118,7 +158,6 @@ export default function ProductV2Page({ params }: { params: { slug: string } }) 
                   </div>
                 )}
               </div>
-              {/* Decorative rose line below */}
               <div className="absolute -bottom-4 left-12 right-12 h-px bg-gradient-to-r from-transparent via-rose-blush to-transparent" />
             </div>
 
@@ -138,8 +177,8 @@ export default function ProductV2Page({ params }: { params: { slug: string } }) 
                 {product.description}
               </p>
 
-              {/* Contents */}
-              {product.contents && (
+              {/* Contents (static products only) */}
+              {product.contents && product.contents.length > 0 && (
                 <div className="mb-8">
                   <p className="text-xs font-semibold tracking-wider uppercase text-rose-text/60 mb-3">
                     Contenu du pack
@@ -157,7 +196,7 @@ export default function ProductV2Page({ params }: { params: { slug: string } }) 
                 </div>
               )}
 
-              {/* Price card — light rose style */}
+              {/* Price card */}
               <div className="bg-rose-petal border border-rose-blush/60 rounded-3xl p-6 mb-6">
                 <p className="text-xs text-rose-muted uppercase tracking-wider mb-4">Tarif</p>
                 <div className="flex flex-wrap gap-8 items-end">
@@ -247,7 +286,7 @@ export default function ProductV2Page({ params }: { params: { slug: string } }) 
                   >
                     <div className="relative h-48 overflow-hidden">
                       <Image
-                        src={getProductImageUrl(p.slug)}
+                        src={getImgUrl(p)}
                         alt={p.name}
                         fill
                         sizes="(max-width: 640px) 50vw, 25vw"
@@ -260,7 +299,7 @@ export default function ProductV2Page({ params }: { params: { slug: string } }) 
                         {p.name}
                       </h3>
                       <p className="text-xs text-rose-deep font-medium">
-                        {p.priceXOF > 0 ? `${p.priceXOF.toLocaleString('fr-FR')} FCFA` : `${p.price.toFixed(2)} €`}
+                        {p.priceXOF > 0 ? `${p.priceXOF.toLocaleString('fr-FR')} FCFA` : p.price > 0 ? `${p.price.toFixed(2)} €` : 'Sur demande'}
                       </p>
                     </div>
                   </Link>
