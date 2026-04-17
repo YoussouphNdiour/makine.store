@@ -18,6 +18,7 @@ model Product {
   priceXOF2   Int?
   category    String
   badge       String?
+  imageUrl    String?
   inStock     Boolean     @default(true)
   wholesale   Boolean     @default(false)
   createdAt   DateTime    @default(now())

@@ -13,6 +13,7 @@ type Product = {
   priceXOF2: number | null
   category: string
   badge: string | null
+  imageUrl: string | null
   inStock: boolean
   wholesale: boolean
 }
@@ -24,6 +25,7 @@ const emptyForm = {
   name: '', slug: '', description: '',
   price: '', priceXOF: '', priceXOF2: '',
   category: 'soins', badge: '',
+  imageUrl: '',
   inStock: true, wholesale: false,
 }
 
@@ -44,6 +46,7 @@ export default function ProductManager({
   const [editing, setEditing] = useState<Product | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [search, setSearch] = useState('')
 
   const filtered = products.filter(p =>
@@ -63,6 +66,7 @@ export default function ProductManager({
       price: String(p.price), priceXOF: String(p.priceXOF),
       priceXOF2: p.priceXOF2 ? String(p.priceXOF2) : '',
       category: p.category, badge: p.badge ?? '',
+      imageUrl: p.imageUrl ?? '',
       inStock: p.inStock, wholesale: p.wholesale,
     })
     setEditing(p)
@@ -71,6 +75,26 @@ export default function ProductManager({
 
   function handleNameChange(name: string) {
     setForm(f => ({ ...f, name, slug: f.slug || slugify(name) }))
+  }
+
+  async function handleImageUpload(file: File) {
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        headers: { 'x-admin-key': adminKey },
+        body: fd,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setForm(f => ({ ...f, imageUrl: data.url }))
+    } catch (err) {
+      alert(`❌ Upload échoué : ${String(err)}`)
+    } finally {
+      setUploading(false)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -177,6 +201,10 @@ export default function ProductManager({
             key={p.id}
             className={`bg-white rounded-2xl p-4 shadow-sm border-2 transition-all ${p.inStock ? 'border-transparent' : 'border-red-100 opacity-60'}`}
           >
+            {p.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={p.imageUrl} alt={p.name} className="w-full h-32 object-cover rounded-xl mb-3" />
+            )}
             <div className="flex items-start justify-between mb-2">
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${categoryColor[p.category] ?? 'bg-gray-100 text-gray-600'}`}>
                 {p.category}
@@ -274,6 +302,33 @@ export default function ProductManager({
                     rows={3}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-makine-gold resize-none"
                   />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-xs font-medium text-gray-500 block mb-1">Photo du produit</label>
+                  <div className="flex gap-2 items-start">
+                    {form.imageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={form.imageUrl} alt="aperçu" className="w-16 h-16 object-cover rounded-xl border border-gray-200 flex-shrink-0" />
+                    )}
+                    <div className="flex-1 space-y-2">
+                      <label className={`flex items-center justify-center gap-2 w-full border-2 border-dashed border-gray-200 rounded-xl py-3 cursor-pointer hover:border-makine-gold transition-colors text-sm text-gray-500 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                        {uploading ? '⏳ Upload…' : '📁 Choisir une photo'}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/avif"
+                          className="hidden"
+                          onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f) }}
+                        />
+                      </label>
+                      <input
+                        type="text"
+                        value={form.imageUrl}
+                        onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-makine-gold font-mono text-gray-500"
+                        placeholder="/images/products/mon-produit.jpg ou URL externe"
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-500 block mb-1">Prix (€) *</label>

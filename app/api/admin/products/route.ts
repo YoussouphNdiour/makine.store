@@ -35,6 +35,7 @@ export async function POST(req: Request) {
         priceXOF2: data.priceXOF2 ? parseInt(data.priceXOF2) : null,
         category: data.category,
         badge: data.badge || null,
+        imageUrl: data.imageUrl || null,
         inStock: data.inStock ?? true,
         wholesale: data.wholesale ?? false,
       },

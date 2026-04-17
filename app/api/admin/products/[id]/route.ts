@@ -19,6 +19,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         }),
         ...(data.category !== undefined && { category: data.category }),
         ...(data.badge !== undefined && { badge: data.badge || null }),
+        ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl || null }),
         ...(data.inStock !== undefined && { inStock: data.inStock }),
         ...(data.wholesale !== undefined && { wholesale: data.wholesale }),
       },
