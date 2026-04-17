@@ -2,9 +2,8 @@
 const nextConfig = {
   output: 'standalone',
   images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'makine.store' },
-    ],
+    // Les images produits sont locales (/images/products/*.jpg)
+    // Aucun domaine externe requis
   },
 }
 module.exports = nextConfig

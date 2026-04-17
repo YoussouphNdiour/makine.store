@@ -29,7 +29,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       title: `${product.name} | Makiné`,
       description: `${product.description} — ${priceLabel}.`,
       images: [
-        `https://makine.store/web/image/product.product/${product.id}/image_1024/${encodeURIComponent(product.name)}`,
+        `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/images/products/${params.slug}.jpg`,
       ],
       type: 'website',
     },
