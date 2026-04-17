@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { RefundButton, MarkDeliveredButton } from './AdminActions'
 import AdminShell from '@/components/AdminShell'
 import { ExportButton } from './ExportButton'
+
+export const dynamic = 'force-dynamic'
 import { OrderDetail } from './OrderDetail'
 
 // ─── Stat cards (existing 4) ────────────────────────────────────────────────

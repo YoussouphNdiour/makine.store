@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import AdminShell from '@/components/AdminShell'
 
+export const dynamic = 'force-dynamic'
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const MONTHS_FR = [

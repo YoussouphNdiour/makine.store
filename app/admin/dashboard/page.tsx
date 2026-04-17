@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import AdminShell from '@/components/AdminShell'
 
+export const dynamic = 'force-dynamic'
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function timeAgo(date: Date): string {

@@ -2,6 +2,8 @@ import AdminShell from '@/components/AdminShell'
 import { prisma } from '@/lib/prisma'
 import { BroadcastForm } from './BroadcastForm'
 
+export const dynamic = 'force-dynamic'
+
 export default async function BroadcastPage({
   searchParams,
 }: {
