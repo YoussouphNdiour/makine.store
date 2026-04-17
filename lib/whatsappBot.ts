@@ -104,6 +104,51 @@ export async function processWhatsAppMessage(params: {
   // Anti-boucle
   if (phone === BOT_NUMBER) return
 
+  // ── Admin command: CONF [ref] — confirm an order from WhatsApp ──
+  if (phone === ADMIN_NUMBER && msg.startsWith('conf ')) {
+    const ref = msg.split(' ')[1]?.toUpperCase()
+    if (!ref || ref.length < 6) {
+      await sendWhatsAppText(phone, `❌ Format : *CONF [référence]* — ex: CONF T8H4CSRM`)
+      return
+    }
+    // Find order by last 8 chars of ID (case-insensitive)
+    const orders = await prisma.order.findMany({
+      take: 200,
+      orderBy: { createdAt: 'desc' },
+      include: { items: { include: { product: true } } },
+    })
+    const order = orders.find(o => o.id.slice(-8).toUpperCase() === ref)
+    if (!order) {
+      await sendWhatsAppText(phone, `❌ Commande *${ref}* introuvable.`)
+      return
+    }
+    if (order.status === 'confirmed') {
+      await sendWhatsAppText(phone, `ℹ️ Commande *${ref}* déjà confirmée.`)
+      return
+    }
+    // Update order
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { status: 'confirmed', paymentStatus: 'paid', whatsappSent: true },
+    })
+    // Notify customer
+    const total = order.currency === 'XOF'
+      ? `${order.totalAmount.toLocaleString('fr-FR')} FCFA`
+      : `${order.totalAmount.toFixed(2)} €`
+    const itemsText = order.items.map(i => `• ${i.product.name} ×${i.quantity}`).join('\n')
+    const customerMsg =
+      `✅ *Commande Makiné confirmée !*\n` +
+      `📦 Réf : *${ref}*\n\n` +
+      `*Votre commande :*\n${itemsText}\n\n` +
+      `💰 *Total : ${total}*\n\n` +
+      `🚚 Votre commande est confirmée et en cours de préparation.\n` +
+      `📞 +221 71 058 17 11\nMerci ! *Makiné* 🌸`
+    const customerPhone = order.customerPhone.replace(/\D/g, '')
+    await sendWhatsAppText(customerPhone, customerMsg)
+    await sendWhatsAppText(phone, `✅ Commande *${ref}* confirmée. Client notifié sur ${order.customerPhone}.`)
+    return
+  }
+
   const session = await prisma.whatsappSession.findUnique({ where: { phone } })
   const country = session?.country ?? (phone.startsWith('221') ? 'SN' : 'FR')
 
@@ -118,9 +163,12 @@ export async function processWhatsAppMessage(params: {
 
   // AIDE / HELP command
   if (msg === 'aide' || msg === 'help') {
+    const helpAdmin = phone === ADMIN_NUMBER
+      ? `\n\n👑 *Commandes admin :*\n✅ *CONF [réf]* — Confirmer une commande`
+      : ''
     await sendWhatsAppText(
       phone,
-      `ℹ️ *Commandes disponibles :*\n\n🔢 *1* — Catalogue\n🔢 *2* — Commander\n🔢 *3* — Suivre commande\n🔢 *0* — Menu\n\n🛒 *CMD [id]* — Ajouter au panier\n🛒 *CMD [id] [qté]* — Ajouter avec quantité\n🗑️ *SUPPR [id]* — Retirer du panier\n👀 *PANIER* — Voir le panier\n🗑️ *VIDER* — Vider le panier\n✅ *VALIDER* — Commander\n🎁 *PROMO [code]* — Réduction\n❓ *AIDE* — Cette aide`
+      `ℹ️ *Commandes disponibles :*\n\n🔢 *1* — Catalogue\n🔢 *2* — Commander\n🔢 *3* — Suivre commande\n🔢 *0* — Menu\n\n🛒 *CMD [id]* — Ajouter au panier\n🛒 *CMD [id] [qté]* — Ajouter avec quantité\n🗑️ *SUPPR [id]* — Retirer du panier\n👀 *PANIER* — Voir le panier\n🗑️ *VIDER* — Vider le panier\n✅ *VALIDER* — Commander\n❓ *AIDE* — Cette aide${helpAdmin}`
     )
     return
   }

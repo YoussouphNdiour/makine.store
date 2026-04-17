@@ -71,7 +71,51 @@ export function MarkDeliveredButton({
       disabled={loading}
       className="w-full text-xs bg-teal-50 text-teal-600 px-3 py-1 rounded-lg hover:bg-teal-100 transition-colors border border-teal-200 disabled:opacity-50"
     >
-      {loading ? '...' : '✅ Livré'}
+      {loading ? '...' : '📬 Livré'}
+    </button>
+  )
+}
+
+export function ConfirmOrderButton({
+  orderId,
+  adminKey,
+}: {
+  orderId: string
+  adminKey: string
+}) {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+
+  async function handleConfirm() {
+    if (!confirm(`Confirmer la commande #${orderId.slice(-8).toUpperCase()} et notifier le client par WhatsApp ?`)) return
+    setLoading(true)
+    try {
+      const res = await fetch('/api/admin/order', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          status: 'confirmed',
+          paymentStatus: 'paid',
+          adminKey,
+        }),
+      })
+      if (!res.ok) throw new Error('Erreur')
+      router.refresh()
+    } catch (err) {
+      alert(`❌ ${String(err)}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={handleConfirm}
+      disabled={loading}
+      className="w-full text-xs bg-green-50 text-green-700 px-3 py-1 rounded-lg hover:bg-green-100 transition-colors border border-green-300 disabled:opacity-50 font-medium"
+    >
+      {loading ? '...' : '✅ Confirmer + WA'}
     </button>
   )
 }

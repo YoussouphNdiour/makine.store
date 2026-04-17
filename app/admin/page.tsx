@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import { RefundButton, MarkDeliveredButton } from './AdminActions'
+import { RefundButton, MarkDeliveredButton, ConfirmOrderButton } from './AdminActions'
 import AdminShell from '@/components/AdminShell'
 import { ExportButton } from './ExportButton'
 
@@ -349,7 +349,7 @@ export default async function AdminPage({
                     </td>
 
                     <td className="px-4 py-3">
-                      <div className="flex flex-col gap-1.5 min-w-[100px]">
+                      <div className="flex flex-col gap-1.5 min-w-[110px]">
                         <a
                           href={`https://wa.me/${order.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
                             `Bonjour ${order.customerName}, concernant votre commande Makiné #${order.id.slice(-8).toUpperCase()} 🌸`
@@ -360,6 +360,10 @@ export default async function AdminPage({
                         >
                           📱 WhatsApp
                         </a>
+
+                        {order.status === 'new' && (
+                          <ConfirmOrderButton orderId={order.id} adminKey={adminPassword} />
+                        )}
 
                         {order.paymentMethod === 'wave' && order.paymentStatus === 'paid' && (
                           <RefundButton orderId={order.id} adminKey={adminPassword} />

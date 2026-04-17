@@ -1,6 +1,13 @@
 import { prisma } from '@/lib/prisma'
+import { sendWhatsAppText } from '@/lib/whatsapp'
 
 const EUR_TO_XOF = 655.957 // parité fixe CFA
+
+const ADMIN_NUMBER = (
+  process.env.WHATSAPP_ADMIN_NUMBER ??
+  process.env.WHATSAPP_BUSINESS_NUMBER ??
+  '221710581711'
+).replace(/\D/g, '')
 
 export async function POST(req: Request) {
   try {
@@ -39,6 +46,14 @@ export async function POST(req: Request) {
     if (totalAmount <= 0) {
       return Response.json({ error: 'Total invalide' }, { status: 400 })
     }
+
+    // Fetch product names for WA notification
+    const productIds = validatedItems.map(i => i.productId)
+    const productNames = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, name: true },
+    })
+    const nameMap = Object.fromEntries(productNames.map(p => [p.id, p.name]))
 
     const order = await prisma.order.create({
       data: {
@@ -90,6 +105,29 @@ export async function POST(req: Request) {
         })
       }
     }
+
+    // Notify admin on WhatsApp immediately (async — don't block response)
+    const ref = order.id.slice(-8).toUpperCase()
+    const total = currency === 'XOF'
+      ? `${totalAmount.toLocaleString('fr-FR')} FCFA`
+      : `${(computedTotal).toFixed(2)} €`
+    const itemsText = validatedItems
+      .map(i => `• ${nameMap[i.productId] ?? i.productId} ×${i.quantity}`)
+      .join('\n')
+    const payLabel: Record<string, string> = {
+      wave: '💙 Wave', orange_money: '🟠 Orange Money', whatsapp: '💬 WhatsApp', cash: '💵 Espèces',
+    }
+    sendWhatsAppText(
+      ADMIN_NUMBER,
+      `🆕 *Nouvelle commande Makiné !*\n` +
+      `📦 Réf : *${ref}*\n` +
+      `👤 ${customerName} — ${customerPhone}\n` +
+      `📍 ${address ?? 'Adresse non précisée'}\n\n` +
+      `${itemsText}\n\n` +
+      `💰 *Total : ${total}*\n` +
+      `💳 ${payLabel[paymentMethod] ?? paymentMethod}\n\n` +
+      `_Voir admin : ${process.env.NEXT_PUBLIC_APP_URL ?? 'https://makine.store'}/admin_`
+    ).catch(e => console.error('[WA Admin notify]', e))
 
     return Response.json({ orderId: order.id })
   } catch (err) {
