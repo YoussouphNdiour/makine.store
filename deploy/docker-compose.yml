@@ -54,7 +54,7 @@ services:
     networks:
       - makine_network
     ports:
-      - "127.0.0.1:3100:3000"
+      - "0.0.0.0:3100:3000"
     depends_on:
       makine_postgres:
         condition: service_healthy
