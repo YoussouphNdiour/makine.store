@@ -2,7 +2,7 @@ FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
-RUN npm ci --only=production && npx prisma generate
+RUN npm ci && npx prisma generate
 
 FROM node:20-alpine AS builder
 WORKDIR /app
