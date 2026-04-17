@@ -42,10 +42,10 @@ export async function POST(req: Request) {
 
     const amount = Math.round(order.totalAmount)
     const ref = orderId.slice(-8).toUpperCase()
-    const phone = (customerPhone as string).replace(/\D/g, '')
-    if (phone.length >= 8) {
+    const cleanPhone = (customerPhone as string).replace(/\D/g, '')
+    if (cleanPhone.length >= 8) {
       sendWhatsAppText(
-        phone,
+        cleanPhone,
         `🟠 *Paiement Orange Money — Makiné*\n\n` +
         `📦 Réf : *${ref}*\n` +
         `💰 Montant : *${amount.toLocaleString('fr-FR')} FCFA*\n\n` +
