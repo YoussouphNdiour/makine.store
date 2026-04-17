@@ -19,7 +19,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN apk add --no-cache openssl && \
+RUN apk add --no-cache openssl su-exec && \
     addgroup --system --gid 1001 makine && adduser --system --uid 1001 makine
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
@@ -28,9 +28,9 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=deps /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=deps /app/node_modules/prisma ./node_modules/prisma
-RUN chown -R makine:makine /app
-USER makine
+COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh && chown -R makine:makine /app
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js db push --accept-data-loss && node server.js"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
