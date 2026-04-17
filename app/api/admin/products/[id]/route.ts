@@ -2,10 +2,25 @@ import { prisma } from '@/lib/prisma'
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { adminKey, ...data } = await req.json()
+    const { adminKey, bundleItems: bundleItemsRaw, ...data } = await req.json()
     if (adminKey !== process.env.ADMIN_PASSWORD) {
       return Response.json({ error: 'Non autorisé' }, { status: 401 })
     }
+
+    // Si bundleItems fournis, remplacer entièrement
+    if (bundleItemsRaw !== undefined) {
+      await prisma.bundleItem.deleteMany({ where: { bundleId: params.id } })
+      if (bundleItemsRaw.length > 0) {
+        await prisma.bundleItem.createMany({
+          data: (bundleItemsRaw as Array<{ componentId: string; qty: number }>).map((bi) => ({
+            bundleId: params.id,
+            componentId: bi.componentId,
+            qty: bi.qty,
+          })),
+        })
+      }
+    }
+
     const product = await prisma.product.update({
       where: { id: params.id },
       data: {
@@ -20,9 +35,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         ...(data.category !== undefined && { category: data.category }),
         ...(data.badge !== undefined && { badge: data.badge || null }),
         ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl || null }),
+        ...(data.stockQty !== undefined && {
+          stockQty: data.stockQty !== '' && data.stockQty != null ? parseInt(data.stockQty) : null,
+        }),
+        ...(data.isBundle !== undefined && { isBundle: data.isBundle }),
         ...(data.inStock !== undefined && { inStock: data.inStock }),
         ...(data.wholesale !== undefined && { wholesale: data.wholesale }),
       },
+      include: { bundleItems: { include: { component: true } } },
     })
     return Response.json(product)
   } catch (err) {
@@ -37,10 +57,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     if (adminKey !== process.env.ADMIN_PASSWORD) {
       return Response.json({ error: 'Non autorisé' }, { status: 401 })
     }
-    // Vérifier s'il y a des commandes liées
     const itemCount = await prisma.orderItem.count({ where: { productId: params.id } })
     if (itemCount > 0) {
-      // Désactiver plutôt que supprimer si lié à des commandes
       await prisma.product.update({
         where: { id: params.id },
         data: { inStock: false },

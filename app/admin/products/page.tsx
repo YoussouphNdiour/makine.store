@@ -13,7 +13,10 @@ export default async function AdminProductsPage({
   const isAuth = searchParams.key === adminPassword
 
   const products = isAuth
-    ? await prisma.product.findMany({ orderBy: { createdAt: 'desc' } })
+    ? await prisma.product.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: { bundleItems: { include: { component: true } } },
+      })
     : []
 
   return (

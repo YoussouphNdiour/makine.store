@@ -9,9 +9,9 @@ datasource db {
 }
 
 model Product {
-  id          String      @id @default(cuid())
+  id          String       @id @default(cuid())
   name        String
-  slug        String      @unique
+  slug        String       @unique
   description String
   price       Float
   priceXOF    Int
@@ -19,10 +19,26 @@ model Product {
   category    String
   badge       String?
   imageUrl    String?
-  inStock     Boolean     @default(true)
-  wholesale   Boolean     @default(false)
-  createdAt   DateTime    @default(now())
+  stockQty    Int?         // null = illimité, number = quantité finie
+  isBundle    Boolean      @default(false)
+  inStock     Boolean      @default(true)
+  wholesale   Boolean      @default(false)
+  createdAt   DateTime     @default(now())
   orderItems  OrderItem[]
+  bundleItems BundleItem[] @relation("BundleParent")
+  componentOf BundleItem[] @relation("BundleComponent")
+}
+
+model BundleItem {
+  id          String  @id @default(cuid())
+  bundleId    String
+  componentId String
+  qty         Int     @default(1)
+  bundle      Product @relation("BundleParent", fields: [bundleId], references: [id], onDelete: Cascade)
+  component   Product @relation("BundleComponent", fields: [componentId], references: [id])
+
+  @@unique([bundleId, componentId])
+  @@index([bundleId])
 }
 
 model Order {

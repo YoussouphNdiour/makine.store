@@ -14,13 +14,16 @@ export async function GET(req: Request) {
   if (searchParams.get('adminKey') !== process.env.ADMIN_PASSWORD) {
     return Response.json({ error: 'Non autorisé' }, { status: 401 })
   }
-  const products = await prisma.product.findMany({ orderBy: { createdAt: 'desc' } })
+  const products = await prisma.product.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { bundleItems: { include: { component: true } } },
+  })
   return Response.json(products)
 }
 
 export async function POST(req: Request) {
   try {
-    const { adminKey, ...data } = await req.json()
+    const { adminKey, bundleItems: bundleItemsRaw, ...data } = await req.json()
     if (adminKey !== process.env.ADMIN_PASSWORD) {
       return Response.json({ error: 'Non autorisé' }, { status: 401 })
     }
@@ -36,9 +39,20 @@ export async function POST(req: Request) {
         category: data.category,
         badge: data.badge || null,
         imageUrl: data.imageUrl || null,
+        stockQty: data.stockQty !== '' && data.stockQty != null ? parseInt(data.stockQty) : null,
+        isBundle: data.isBundle ?? false,
         inStock: data.inStock ?? true,
         wholesale: data.wholesale ?? false,
+        bundleItems: bundleItemsRaw?.length
+          ? {
+              create: (bundleItemsRaw as Array<{ componentId: string; qty: number }>).map((bi) => ({
+                componentId: bi.componentId,
+                qty: bi.qty,
+              })),
+            }
+          : undefined,
       },
+      include: { bundleItems: { include: { component: true } } },
     })
     return Response.json(product)
   } catch (err) {

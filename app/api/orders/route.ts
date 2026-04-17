@@ -62,6 +62,35 @@ export async function POST(req: Request) {
       },
     })
 
+    // Décrémenter le stock pour chaque article
+    for (const item of validatedItems) {
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId },
+        include: { bundleItems: true },
+      })
+      if (!product) continue
+
+      if (product.isBundle && product.bundleItems.length > 0) {
+        // Gamme : décrémenter chaque composant
+        for (const bi of product.bundleItems) {
+          const comp = await prisma.product.findUnique({ where: { id: bi.componentId } })
+          if (!comp || comp.stockQty == null) continue
+          const newQty = comp.stockQty - bi.qty * item.quantity
+          await prisma.product.update({
+            where: { id: bi.componentId },
+            data: { stockQty: Math.max(0, newQty), inStock: newQty > 0 },
+          })
+        }
+      } else if (product.stockQty != null) {
+        // Produit simple avec stock fini
+        const newQty = product.stockQty - item.quantity
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: { stockQty: Math.max(0, newQty), inStock: newQty > 0 },
+        })
+      }
+    }
+
     return Response.json({ orderId: order.id })
   } catch (err) {
     console.error('[API Orders]', err)
