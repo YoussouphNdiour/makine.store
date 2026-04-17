@@ -1,0 +1,107 @@
+version: "3.9"
+
+networks:
+  makine_network:
+    name: makine_network
+    driver: bridge
+    internal: false
+    ipam:
+      config:
+        - subnet: 172.40.0.0/24
+    labels:
+      - "com.makine.project=makine"
+
+volumes:
+  makine_postgres_data:
+    name: makine_postgres_data
+  makine_postgres_backups:
+    name: makine_postgres_backups
+  makine_app_uploads:
+    name: makine_app_uploads
+
+services:
+  makine_postgres:
+    image: postgres:16-alpine
+    container_name: makine_postgres
+    restart: unless-stopped
+    networks:
+      - makine_network
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-makine_db}
+      POSTGRES_USER: ${POSTGRES_USER:-makine_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - makine_postgres_data:/var/lib/postgresql/data
+      - makine_postgres_backups:/backups
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-makine_user} -d ${POSTGRES_DB:-makine_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "com.makine.service=database"
+
+  makine_app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+    container_name: makine_app
+    restart: unless-stopped
+    networks:
+      - makine_network
+    ports:
+      - "127.0.0.1:3100:3000"
+    depends_on:
+      makine_postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-makine_user}:${POSTGRES_PASSWORD}@makine_postgres:5432/${POSTGRES_DB:-makine_db}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      WAVE_API_KEY: ${WAVE_API_KEY}
+      WAVE_SIGNING_SECRET: ${WAVE_SIGNING_SECRET}
+      WAVE_CHECKOUT_API_KEY: ${WAVE_CHECKOUT_API_KEY}
+      ORANGE_MONEY_CLIENT_ID: ${ORANGE_MONEY_CLIENT_ID}
+      ORANGE_MONEY_CLIENT_SECRET: ${ORANGE_MONEY_CLIENT_SECRET}
+      ORANGE_MONEY_BASE_URL: ${ORANGE_MONEY_BASE_URL:-https://api.orange-sonatel.com}
+      WASENDER_API_KEY: ${WASENDER_API_KEY}
+      WASENDER_SESSION_ID: ${WASENDER_SESSION_ID}
+      WASENDER_WEBHOOK_SECRET: ${WASENDER_WEBHOOK_SECRET}
+      WHATSAPP_BUSINESS_NUMBER: ${WHATSAPP_BUSINESS_NUMBER:-+221710581711}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    volumes:
+      - makine_app_uploads:/app/public/images/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  makine_backup:
+    image: postgres:16-alpine
+    container_name: makine_backup
+    restart: unless-stopped
+    networks:
+      - makine_network
+    depends_on:
+      makine_postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:-makine_user}
+      POSTGRES_DB: ${POSTGRES_DB:-makine_db}
+    volumes:
+      - makine_postgres_backups:/backups
+    command: >
+      sh -c "while true; do
+        sleep 86400;
+        pg_dump -h makine_postgres -U $$POSTGRES_USER -d $$POSTGRES_DB
+          --format=custom --file=/backups/makine_$$(date +%Y%m%d_%H%M%S).dump &&
+        find /backups -name '*.dump' -mtime +7 -delete;
+      done"

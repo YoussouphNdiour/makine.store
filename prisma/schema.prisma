@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  description String
+  price       Float
+  priceXOF    Int
+  priceXOF2   Int?
+  category    String
+  badge       String?
+  inStock     Boolean     @default(true)
+  wholesale   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  customerName  String
+  customerPhone String
+  customerEmail String?
+  address       String?
+  country       String
+  currency      String
+  totalAmount   Float
+  paymentMethod String
+  paymentStatus String      @default("pending")
+  paymentRef    String?
+  wavePayoutId  String?
+  whatsappSent  Boolean     @default(false)
+  status        String      @default("new")
+  isWholesale   Boolean     @default(false)
+  notes         String?
+  items         OrderItem[]
+
+  @@index([paymentStatus])
+  @@index([status])
+  @@index([paymentMethod])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model WhatsappSession {
+  id             String   @id @default(cuid())
+  phone          String   @unique
+  state          String   @default("greeting")
+  cart           Json     @default("[]")
+  customerName   String?
+  customerPhone  String?
+  country        String   @default("SN")
+  lastMsg        DateTime @default(now())
+  createdAt      DateTime @default(now())
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  country   String?
+  createdAt DateTime @default(now())
+}
