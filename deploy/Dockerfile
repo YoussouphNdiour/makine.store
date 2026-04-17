@@ -25,9 +25,7 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=deps /app/node_modules/.bin/prisma* ./node_modules/.bin/
-COPY --from=deps /app/node_modules/prisma ./node_modules/prisma
-COPY --from=deps /app/node_modules/@prisma ./node_modules/@prisma
+RUN npm install --no-package-lock --no-save prisma@5.22.0
 RUN chown -R makine:makine /app
 USER makine
 EXPOSE 3000
