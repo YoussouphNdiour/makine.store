@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { getCartCount } from '@/lib/cart'
 
 const NAV = [
   { href: '/v2/boutique', label: 'Boutique' },
@@ -14,7 +15,15 @@ const NAV = [
 export default function HeaderV2({ transparent = false }: { transparent?: boolean }) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [cartCount, setCartCount] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setCartCount(getCartCount())
+    const update = () => setCartCount(getCartCount())
+    window.addEventListener('cart-updated', update)
+    return () => window.removeEventListener('cart-updated', update)
+  }, [])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
@@ -84,10 +93,18 @@ export default function HeaderV2({ transparent = false }: { transparent?: boolea
                 </Link>
               ))}
               <Link
-                href="/v2/boutique"
-                className="bg-rose-deep text-white text-xs font-semibold px-5 py-2 rounded-full hover:bg-rose-wine transition-colors shadow-rose-sm"
+                href="/checkout"
+                className="relative flex items-center gap-1.5 bg-rose-deep text-white text-xs font-semibold px-5 py-2 rounded-full hover:bg-rose-wine transition-colors shadow-rose-sm"
               >
-                Commander
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Panier
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-wine text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
               </Link>
             </nav>
 

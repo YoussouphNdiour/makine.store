@@ -1,11 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
-import { getProductImageUrl } from '@/data/productImages'
 import HeaderV2 from '@/components/HeaderV2'
 import FooterV2 from '@/components/FooterV2'
+import ProductCard from './ProductCard'
 
 export type StoreProduct = {
   id: string
@@ -30,22 +28,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   maquillage: 'Maquillage',
 }
 
-const BADGE_STYLE: Record<string, string> = {
-  Bestseller: 'bg-rose-deep text-white',
-  Pack:       'bg-rose-wine text-white',
-  Nouveau:    'bg-rose-medium text-white',
-  Promo:      'bg-red-400 text-white',
-}
-
-function formatPrice(p: StoreProduct) {
-  if (p.priceXOF === 0 && p.price === 0) return 'Prix sur demande'
-  if (p.priceXOF > 0) return `${p.priceXOF.toLocaleString('fr-FR')} FCFA`
-  return `${p.price.toFixed(2)} €`
-}
-
-function getImgUrl(p: StoreProduct) {
-  return p.imageUrl || getProductImageUrl(p.slug)
-}
 
 export default function BoutiqueV2Page() {
   const [products, setProducts] = useState<StoreProduct[]>([])
@@ -186,67 +168,7 @@ export default function BoutiqueV2Page() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filtered.map((product) => (
-              <Link
-                key={product.id}
-                href={`/v2/boutique/${product.slug}`}
-                className="group rose-card-lift bg-white rounded-3xl overflow-hidden shadow-rose-card border border-rose-petal/60"
-              >
-                {/* Image */}
-                <div className="relative h-64 bg-rose-petal overflow-hidden">
-                  <Image
-                    src={getImgUrl(product)}
-                    alt={product.name}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                    className="object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute top-4 right-4 flex flex-col gap-1.5 items-end">
-                    {product.badge && (
-                      <span className={`text-xs font-semibold px-3 py-1 rounded-full ${BADGE_STYLE[product.badge] ?? 'bg-rose-medium text-white'}`}>
-                        {product.badge}
-                      </span>
-                    )}
-                    {product.wholesale && (
-                      <span className="text-xs bg-rose-text/70 text-white px-2.5 py-0.5 rounded-full">
-                        Gros
-                      </span>
-                    )}
-                  </div>
-                  {!product.inStock && (
-                    <div className="absolute inset-0 bg-rose-snow/70 flex items-center justify-center">
-                      <span className="bg-white text-rose-wine text-xs font-semibold px-4 py-2 rounded-full shadow-rose-sm">
-                        Épuisé
-                      </span>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 flex items-end justify-center pb-5 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10">
-                    <span className="bg-white text-rose-deep text-xs font-bold px-4 py-2 rounded-full shadow-rose-sm translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                      Voir le produit →
-                    </span>
-                  </div>
-                </div>
-
-                {/* Info */}
-                <div className="p-5">
-                  <p className="text-xs text-rose-medium uppercase tracking-wider mb-1 font-medium">
-                    {CATEGORY_LABELS[product.category] ?? product.category}
-                  </p>
-                  <h2 className="font-serif font-semibold text-base text-rose-wine leading-snug mb-1 group-hover:text-rose-deep transition-colors line-clamp-2">
-                    {product.name}
-                  </h2>
-                  <div className="flex items-baseline justify-between mt-2">
-                    <p className="font-bold text-rose-deep text-base">{formatPrice(product)}</p>
-                    {product.price > 0 && product.priceXOF > 0 && (
-                      <p className="text-xs text-rose-muted">{product.price.toFixed(2)} €</p>
-                    )}
-                  </div>
-                  {product.priceXOF2 && (
-                    <p className="text-xs text-rose-deep font-medium mt-1 flex items-center gap-1">
-                      <span>🎁</span> 2 pour {product.priceXOF2.toLocaleString('fr-FR')} FCFA
-                    </p>
-                  )}
-                </div>
-              </Link>
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}

@@ -7,6 +7,7 @@ import { products as staticProducts } from '@/data/products'
 import { getProductImageUrl } from '@/data/productImages'
 import HeaderV2 from '@/components/HeaderV2'
 import FooterV2 from '@/components/FooterV2'
+import AddToCartButton from './AddToCartButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -233,13 +234,7 @@ export default async function ProductV2Page({ params }: { params: { slug: string
 
               {/* CTAs */}
               <div className="flex flex-col gap-3">
-                <Link
-                  href={`/checkout?product=${product.id}`}
-                  className={`flex items-center justify-center gap-3 bg-rose-deep hover:bg-rose-wine text-white font-semibold px-6 py-4 rounded-2xl text-sm transition-all hover:shadow-rose-md group ${!product.inStock ? 'opacity-40 pointer-events-none' : ''}`}
-                >
-                  Commander en ligne
-                  <span className="transition-transform group-hover:translate-x-1">→</span>
-                </Link>
+                <AddToCartButton productId={product.id} inStock={product.inStock} />
                 <a
                   href={`https://wa.me/221784715757?text=${waMessage}`}
                   target="_blank"

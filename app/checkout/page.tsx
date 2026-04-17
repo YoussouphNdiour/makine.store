@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { products as staticProducts } from '@/data/products'
 import { getProductImageUrl } from '@/data/productImages'
+import { getCart, clearCart } from '@/lib/cart'
 
 type AnyProduct = {
   id: string
@@ -70,21 +71,26 @@ function CheckoutContent() {
         }
         setAllProducts(merged)
         setProductsLoaded(true)
-        // Initialiser le panier avec le produit de l'URL (cherche par ID ou slug)
+        // Initialiser le panier
         if (productIdFromUrl) {
+          // Commande directe depuis la page produit
           const found = merged.find(p => p.id === productIdFromUrl || p.slug === productIdFromUrl)
-          if (found) {
-            setCart([{ productId: found.id, quantity: 1 }])
-          }
+          if (found) setCart([{ productId: found.id, quantity: 1 }])
+        } else {
+          // Charger le panier depuis localStorage (boutons "Ajouter au panier")
+          const saved = getCart()
+          if (saved.length > 0) setCart(saved)
         }
       })
       .catch(() => {
-        // Fallback statique : cherche par ID ou slug
         if (productIdFromUrl) {
           const found = (staticProducts as AnyProduct[]).find(
             p => p.id === productIdFromUrl || p.slug === productIdFromUrl
           )
           if (found) setCart([{ productId: found.id, quantity: 1 }])
+        } else {
+          const saved = getCart()
+          if (saved.length > 0) setCart(saved)
         }
         setProductsLoaded(true)
       })
@@ -165,6 +171,8 @@ function CheckoutContent() {
 
       if (!orderRes.ok) throw new Error('Erreur création commande')
       const { orderId } = await orderRes.json()
+
+      clearCart()
 
       if (paymentMethod === 'wave') {
         const waveRes = await fetch('/api/payment/wave/checkout', {
