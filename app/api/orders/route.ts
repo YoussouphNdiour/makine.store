@@ -133,6 +133,33 @@ export async function POST(req: Request) {
       `👇 *Confirmer la commande :*\n${confirmUrl}`
     ).catch(e => console.error('[WA Admin notify]', e))
 
+    // Notify customer on WhatsApp based on payment method
+    const paymentInstructions: Record<string, string> = {
+      wave:
+        `💙 *Paiement Wave*\nVous allez recevoir une demande de paiement Wave sur votre téléphone. ` +
+        `Veuillez l'accepter pour confirmer votre commande.`,
+      orange_money:
+        `🟠 *Paiement Orange Money*\nUne demande de paiement Orange Money sera envoyée sur votre numéro. ` +
+        `Veuillez la valider pour confirmer votre commande.`,
+      whatsapp:
+        `💬 *Paiement WhatsApp*\nUn conseiller Makiné va vous contacter sous peu ` +
+        `pour organiser le paiement et la livraison.`,
+      cash:
+        `💵 *Paiement à la livraison*\nVotre commande est enregistrée. ` +
+        `Vous paierez à la réception de votre colis.`,
+    }
+    const customerNotif =
+      `✅ *Commande Makiné reçue !*\n` +
+      `📦 Réf : *${ref}*\n\n` +
+      `*Votre panier :*\n${itemsText}\n\n` +
+      `💰 *Total : ${total}*\n\n` +
+      (paymentInstructions[paymentMethod] ?? `💳 Paiement : ${paymentMethod}`) +
+      `\n\nMerci pour votre confiance ! *Makiné* 🌸`
+
+    const normalizedCustomerPhone = customerPhone.replace(/\D/g, '')
+    sendWhatsAppText(normalizedCustomerPhone, customerNotif)
+      .catch(e => console.error('[WA Customer notify]', e))
+
     return Response.json({ orderId: order.id })
   } catch (err) {
     console.error('[API Orders]', err)
