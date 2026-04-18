@@ -2,18 +2,9 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 
 export const metadata: Metadata = {
-  title: {
-    template: '%s | Makiné',
-    default: 'Makiné — Cosmétiques Naturels de Luxe',
-  },
-  description:
-    'Makiné — gammes corporelles, huiles précieuses et soins artisanaux pour sublimer chaque teint. Livraison Sénégal & France.',
-  openGraph: {
-    type: 'website',
-    locale: 'fr_FR',
-    siteName: 'Makiné',
-    images: ['/images/lolo/logo.png'],
-  },
+  title: { template: '%s · Makiné', default: 'Makiné — Cosmétiques de Luxe' },
+  description: 'Gammes corporelles, huiles & soins artisanaux pour sublimer chaque teint. Sénégal & France.',
+  openGraph: { type: 'website', locale: 'fr_FR', siteName: 'Makiné', images: ['/images/lolo/logo.png'] },
 }
 
 export default function V3Layout({ children }: { children: ReactNode }) {

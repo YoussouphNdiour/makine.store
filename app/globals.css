@@ -187,4 +187,82 @@ html {
     filter: blur(80px);
     pointer-events: none;
   }
+
+  /* ── V3 Luxury utilities ─────────────────────────────────────── */
+
+  /* Marquee scroll */
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .animate-marquee {
+    animation: marquee 28s linear infinite;
+  }
+
+  /* Gold shimmer text */
+  .text-gold-shimmer {
+    background: linear-gradient(
+      90deg,
+      #9a7040 0%,
+      #f0d9a8 35%,
+      #d4a96a 50%,
+      #f0d9a8 65%,
+      #9a7040 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 5s linear infinite;
+  }
+
+  /* Lux card hover */
+  .lux-card-hover {
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                border-color 0.3s ease,
+                box-shadow 0.4s ease;
+  }
+  .lux-card-hover:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(212,169,106,0.2);
+  }
+
+  /* Glass panel */
+  .lux-glass {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+
+  /* Lux image overlay */
+  .lux-img-overlay {
+    position: relative;
+    overflow: hidden;
+  }
+  .lux-img-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(6,6,14,0.92) 0%, rgba(6,6,14,0.3) 50%, transparent 100%);
+    transition: opacity 0.5s ease;
+  }
+  .lux-img-overlay:hover::after {
+    background: linear-gradient(to top, rgba(6,6,14,0.85) 0%, rgba(6,6,14,0.2) 50%, transparent 100%);
+  }
+
+  /* Gold border gradient */
+  .gold-border {
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    position: relative;
+  }
+  .gold-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(212,169,106,0.5), rgba(212,169,106,0.1), rgba(212,169,106,0.4));
+    z-index: -1;
+  }
 }

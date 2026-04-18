@@ -1,128 +1,103 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import HeaderV3 from '@/components/HeaderV3'
+import NavV3 from '@/components/NavV3'
 import { addToCart } from '@/lib/cart'
 import { getProductImageUrl } from '@/data/productImages'
 
-type StoreProduct = {
-  id: string
-  slug: string
-  name: string
-  category: string
-  price: number
-  priceXOF: number
-  priceXOF2?: number | null
-  badge?: string | null
-  description: string
-  inStock: boolean
-  wholesale: boolean
-  imageUrl?: string | null
+type P = {
+  id: string; slug: string; name: string; category: string
+  price: number; priceXOF: number; priceXOF2?: number | null
+  badge?: string | null; description: string; inStock: boolean
+  wholesale: boolean; imageUrl?: string | null
 }
 
 const CAT_LABELS: Record<string, string> = {
-  gamme: 'Gammes',
-  soins: 'Soins',
-  huile: 'Huiles',
-  savon: 'Savons',
-  maquillage: 'Maquillage',
+  gamme: 'Gammes', soins: 'Soins', huile: 'Huiles', savon: 'Savons', maquillage: 'Maquillage',
 }
 
-function formatPrice(p: StoreProduct) {
+function fmtPrice(p: P) {
   if (p.priceXOF > 0) return `${p.priceXOF.toLocaleString('fr-FR')} FCFA`
   if (p.price > 0) return `${p.price.toFixed(2)} €`
-  return 'Prix sur demande'
+  return 'Sur demande'
 }
 
-function ProductCardV3({ product }: { product: StoreProduct }) {
+function Card({ p }: { p: P }) {
   const [added, setAdded] = useState(false)
-  const imgUrl = product.imageUrl || getProductImageUrl(product.slug)
+  const img = p.imageUrl || getProductImageUrl(p.slug)
 
-  function handleAdd(e: React.MouseEvent) {
-    e.preventDefault()
-    e.stopPropagation()
-    addToCart(product.id)
-    setAdded(true)
+  const handleAdd = useCallback((e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation()
+    addToCart(p.id); setAdded(true)
     setTimeout(() => setAdded(false), 2000)
-  }
+  }, [p.id])
 
   return (
     <Link
-      href={`/v3/boutique/${product.slug}`}
-      className="group relative rounded-2xl overflow-hidden border border-white/6 hover:border-lux-gold/25 transition-all duration-500 flex flex-col"
-      style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)' }}
+      href={`/v3/boutique/${p.slug}`}
+      className="group lux-card-hover rounded-xl overflow-hidden flex flex-col"
+      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
     >
       {/* Image */}
-      <div className="relative h-60 overflow-hidden flex-shrink-0">
+      <div className="relative overflow-hidden flex-shrink-0" style={{ aspectRatio: '3/4' }}>
         <Image
-          src={imgUrl}
-          alt={product.name}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          className="object-cover transition-transform duration-700 group-hover:scale-110"
+          src={img} alt={p.name} fill
+          sizes="(max-width:640px) 50vw,(max-width:1024px) 33vw,25vw"
+          className="object-cover transition-transform duration-700 group-hover:scale-108"
+          style={{ filter: 'brightness(0.75) saturate(0.85)' }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-lux-void/70 via-transparent to-transparent" />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(6,6,14,0.85) 0%, transparent 55%)' }} />
 
         {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-          {product.badge && (
-            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-lux-gold/20 text-lux-gold border border-lux-gold/30 backdrop-blur-sm">
-              {product.badge}
-            </span>
-          )}
-          {product.wholesale && (
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-white/10 text-lux-text/60 border border-white/10 backdrop-blur-sm">
-              Gros
-            </span>
-          )}
-        </div>
-
-        {/* Out of stock */}
-        {!product.inStock && (
-          <div className="absolute inset-0 bg-lux-void/60 flex items-center justify-center backdrop-blur-[2px]">
-            <span className="text-xs font-semibold px-4 py-2 rounded-full border border-white/20 text-lux-muted">
-              Épuisé
+        {p.badge && (
+          <div className="absolute top-3 left-3">
+            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full" style={{ background: 'rgba(212,169,106,0.18)', color: '#d4a96a', border: '1px solid rgba(212,169,106,0.3)', backdropFilter: 'blur(8px)' }}>
+              {p.badge}
             </span>
           </div>
         )}
 
-        {/* Add to cart on hover */}
-        {product.inStock && (
-          <div className="absolute inset-0 flex flex-col items-center justify-end pb-4 gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+        {/* Out of stock veil */}
+        {!p.inStock && (
+          <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(6,6,14,0.7)', backdropFilter: 'blur(2px)' }}>
+            <span className="text-xs font-semibold px-4 py-2 rounded-full" style={{ border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(240,237,232,0.5)' }}>Épuisé</span>
+          </div>
+        )}
+
+        {/* Add to cart — hover */}
+        {p.inStock && (
+          <div className="absolute bottom-3 left-3 right-3 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-10">
             <button
               onClick={handleAdd}
-              className={`text-xs font-bold px-5 py-2 rounded-full transition-all duration-300 translate-y-2 group-hover:translate-y-0 ${
-                added
-                  ? 'bg-green-500 text-white'
-                  : 'bg-lux-gold text-lux-void hover:bg-lux-gold-lt'
-              }`}
+              className="w-full py-2.5 rounded-lg text-xs font-bold transition-all duration-200"
+              style={added
+                ? { background: '#22c55e', color: '#fff' }
+                : { background: '#d4a96a', color: '#06060e' }}
             >
-              {added ? '✓ Ajouté' : '+ Ajouter au panier'}
+              {added ? '✓ Ajouté au panier' : '+ Ajouter au panier'}
             </button>
           </div>
         )}
       </div>
 
       {/* Info */}
-      <div className="p-4 flex flex-col flex-1">
-        <p className="text-[11px] text-lux-gold/60 uppercase tracking-wider mb-1 font-medium">
-          {CAT_LABELS[product.category] ?? product.category}
+      <div className="p-3.5 flex flex-col gap-1">
+        <p className="text-[10px] uppercase tracking-wider font-medium" style={{ color: 'rgba(212,169,106,0.6)' }}>
+          {CAT_LABELS[p.category] ?? p.category}
         </p>
-        <h3 className="font-serif font-semibold text-sm text-lux-text leading-snug mb-2 group-hover:text-lux-gold transition-colors line-clamp-2 flex-1">
-          {product.name}
+        <h3 className="font-serif font-semibold text-sm leading-snug line-clamp-2 transition-colors group-hover:text-[#d4a96a]" style={{ color: '#f0ede8' }}>
+          {p.name}
         </h3>
         <div className="flex items-baseline justify-between mt-1">
-          <p className="font-bold text-lux-gold text-sm">{formatPrice(product)}</p>
-          {product.price > 0 && product.priceXOF > 0 && (
-            <p className="text-xs text-lux-muted/60">{product.price.toFixed(2)} €</p>
+          <p className="text-sm font-bold" style={{ color: '#d4a96a' }}>{fmtPrice(p)}</p>
+          {p.price > 0 && p.priceXOF > 0 && (
+            <p className="text-xs" style={{ color: 'rgba(240,237,232,0.25)' }}>{p.price.toFixed(2)} €</p>
           )}
         </div>
-        {product.priceXOF2 && (
-          <p className="text-[11px] text-lux-rose mt-1 flex items-center gap-1">
-            🎁 2 pour {product.priceXOF2.toLocaleString('fr-FR')} FCFA
-          </p>
+        {p.priceXOF2 && (
+          <p className="text-[10px]" style={{ color: '#e8b4be' }}>🎁 2 pour {p.priceXOF2.toLocaleString('fr-FR')} FCFA</p>
         )}
       </div>
     </Link>
@@ -130,36 +105,22 @@ function ProductCardV3({ product }: { product: StoreProduct }) {
 }
 
 export default function BoutiqueV3() {
-  const [products, setProducts] = useState<StoreProduct[]>([])
+  const [products, setProducts] = useState<P[]>([])
   const [loading, setLoading] = useState(true)
   const [cat, setCat] = useState('all')
-  const [wholesale, setWholesale] = useState(false)
   const [search, setSearch] = useState('')
+  const [wholesale, setWholesale] = useState(false)
 
   useEffect(() => {
-    // Read cat from URL
-    const url = new URL(window.location.href)
-    const urlCat = url.searchParams.get('cat')
+    const urlCat = new URLSearchParams(window.location.search).get('cat')
     if (urlCat) setCat(urlCat)
-  }, [])
-
-  useEffect(() => {
     fetch('/api/products')
       .then(r => r.json())
-      .then(data => { setProducts(Array.isArray(data) ? data : []); setLoading(false) })
+      .then(d => { setProducts(Array.isArray(d) ? d : []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
   const cats = Array.from(new Set(products.map(p => p.category)))
-  const CATEGORIES = [
-    { key: 'all', label: 'Tout', count: products.length },
-    ...cats.map(c => ({
-      key: c,
-      label: CAT_LABELS[c] ?? c,
-      count: products.filter(p => p.category === c).length,
-    })),
-  ]
-
   const filtered = products.filter(p => {
     if (cat !== 'all' && p.category !== cat) return false
     if (wholesale && !p.wholesale) return false
@@ -168,58 +129,59 @@ export default function BoutiqueV3() {
   })
 
   return (
-    <div className="min-h-screen bg-lux-void text-lux-text">
-      <HeaderV3 />
+    <div style={{ background: '#06060e', color: '#f0ede8', minHeight: '100vh' }}>
+      <NavV3 />
 
-      {/* Hero strip */}
-      <section className="relative pt-28 pb-16 px-5 lg:px-8 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_50%,rgba(212,169,106,0.07)_0%,transparent_60%)]" />
-        {/* Gold top border */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-lux-gold/20 to-transparent" />
-        <div className="max-w-7xl mx-auto relative">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-px w-8 bg-lux-gold/50" />
-            <span className="text-lux-gold text-xs font-semibold tracking-[0.2em] uppercase">Collection complète</span>
+      {/* ── HERO STRIP ─────────────────────────────────── */}
+      <section className="relative overflow-hidden" style={{ paddingTop: '100px', paddingBottom: '60px' }}>
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(212,169,106,0.06) 0%, transparent 60%)' }} />
+        <div className="max-w-7xl mx-auto px-6 lg:px-12">
+          <div className="flex items-end gap-3 mb-4">
+            <span className="w-8 h-px block" style={{ background: '#d4a96a' }} />
+            <p className="text-xs font-semibold tracking-[0.25em] uppercase" style={{ color: '#d4a96a' }}>Collection</p>
           </div>
-          <h1 className="font-serif text-5xl md:text-6xl font-bold text-lux-text leading-tight">
+          <h1 className="font-serif font-bold" style={{ fontSize: 'clamp(2.5rem, 7vw, 5rem)', letterSpacing: '-0.03em', lineHeight: 1 }}>
             Notre Boutique
           </h1>
-          <p className="text-lux-muted mt-3 text-base max-w-xl">
+          <p className="mt-3 text-sm" style={{ color: 'rgba(240,237,232,0.4)' }}>
             {loading ? 'Chargement…' : `${products.length} soins naturels pour sublimer votre peau`}
           </p>
         </div>
       </section>
 
-      {/* Sticky filters */}
-      <div className="sticky top-0 z-40 border-b border-white/6" style={{ background: 'rgba(6,6,14,0.85)', backdropFilter: 'blur(20px)' }}>
-        <div className="max-w-7xl mx-auto px-5 lg:px-8 py-3 flex flex-wrap gap-3 items-center">
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map(c => (
+      {/* ── FILTERS ─────────────────────────────────────── */}
+      <div
+        className="sticky top-0 z-40 transition-all"
+        style={{ background: 'rgba(6,6,14,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+      >
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-3 flex flex-wrap items-center gap-2">
+          {/* Category pills */}
+          <div className="flex flex-wrap gap-1.5 flex-1">
+            {[{ key: 'all', label: 'Tout', count: products.length },
+              ...cats.map(c => ({ key: c, label: CAT_LABELS[c] ?? c, count: products.filter(p => p.category === c).length })),
+            ].map(c => (
               <button
                 key={c.key}
                 onClick={() => setCat(c.key)}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                  cat === c.key
-                    ? 'bg-lux-gold text-lux-void font-semibold'
-                    : 'border border-white/10 text-lux-muted hover:border-lux-gold/40 hover:text-lux-gold'
-                }`}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200"
+                style={cat === c.key
+                  ? { background: '#d4a96a', color: '#06060e' }
+                  : { background: 'rgba(255,255,255,0.05)', color: 'rgba(240,237,232,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}
               >
                 {c.label}
-                <span className={`text-[10px] px-1.5 py-px rounded-full font-bold ${
-                  cat === c.key ? 'bg-lux-void/20' : 'bg-white/5 text-lux-muted'
-                }`}>{c.count}</span>
+                <span className="text-[10px] font-bold px-1.5 py-px rounded-full" style={{ background: cat === c.key ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.06)' }}>{c.count}</span>
               </button>
             ))}
           </div>
 
-          <div className="flex gap-2 ml-auto items-center">
+          {/* Right controls */}
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setWholesale(!wholesale)}
-              className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                wholesale
-                  ? 'bg-lux-gold text-lux-void border-lux-gold'
-                  : 'border-white/10 text-lux-muted hover:border-lux-gold/40'
-              }`}
+              className="px-3.5 py-1.5 rounded-full text-xs font-medium transition-all"
+              style={wholesale
+                ? { background: '#d4a96a', color: '#06060e' }
+                : { background: 'rgba(255,255,255,0.05)', color: 'rgba(240,237,232,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
               💼 Gros
             </button>
@@ -229,68 +191,58 @@ export default function BoutiqueV3() {
                 placeholder="Rechercher…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="border border-white/10 bg-white/5 rounded-full px-4 py-1.5 text-xs text-lux-text placeholder-lux-muted/50 w-36 focus:w-48 focus:outline-none focus:border-lux-gold/40 transition-all"
+                className="text-xs pl-3 pr-7 py-1.5 rounded-full outline-none transition-all"
+                style={{
+                  width: search ? '160px' : '120px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: '#f0ede8',
+                }}
               />
               {search && (
-                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-lux-muted text-sm">×</button>
+                <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs" style={{ color: 'rgba(240,237,232,0.4)' }}>×</button>
               )}
             </div>
-            <span className="text-xs text-lux-muted/50 whitespace-nowrap hidden sm:block">
-              {filtered.length} produit{filtered.length !== 1 ? 's' : ''}
-            </span>
+            <span className="text-xs hidden sm:block" style={{ color: 'rgba(240,237,232,0.25)' }}>{filtered.length} produit{filtered.length !== 1 ? 's' : ''}</span>
           </div>
         </div>
       </div>
 
-      {/* Product grid */}
-      <main className="max-w-7xl mx-auto px-5 lg:px-8 py-12">
+      {/* ── GRID ────────────────────────────────────────── */}
+      <main className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="rounded-2xl border border-white/6 overflow-hidden animate-pulse" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                <div className="h-60 bg-white/5" />
-                <div className="p-4 space-y-2">
-                  <div className="h-3 bg-white/5 rounded w-1/3" />
-                  <div className="h-4 bg-white/5 rounded w-3/4" />
-                  <div className="h-4 bg-white/5 rounded w-1/2" />
+              <div key={i} className="rounded-xl overflow-hidden animate-pulse" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <div style={{ aspectRatio: '3/4', background: 'rgba(255,255,255,0.04)' }} />
+                <div className="p-3.5 space-y-2">
+                  <div className="h-2 rounded w-1/3" style={{ background: 'rgba(255,255,255,0.04)' }} />
+                  <div className="h-3 rounded w-3/4" style={{ background: 'rgba(255,255,255,0.04)' }} />
+                  <div className="h-3 rounded w-1/2" style={{ background: 'rgba(255,255,255,0.04)' }} />
                 </div>
               </div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-24">
-            <div className="w-20 h-20 rounded-full border border-white/10 flex items-center justify-center mx-auto mb-6 text-4xl">
-              🌸
-            </div>
-            <p className="text-xl font-serif text-lux-text mb-2">Aucun produit trouvé</p>
-            <p className="text-lux-muted text-sm mb-6">Essayez de modifier vos filtres.</p>
-            <button
-              onClick={() => { setCat('all'); setSearch(''); setWholesale(false) }}
-              className="text-sm text-lux-gold hover:text-lux-gold-lt transition-colors"
-            >
-              Réinitialiser les filtres →
+          <div className="text-center py-28">
+            <p className="font-serif text-4xl mb-3" style={{ color: 'rgba(240,237,232,0.15)' }}>∅</p>
+            <p className="font-serif text-xl mb-2" style={{ color: 'rgba(240,237,232,0.5)' }}>Aucun produit trouvé</p>
+            <button onClick={() => { setCat('all'); setSearch(''); setWholesale(false) }} className="text-sm mt-4 transition-colors" style={{ color: '#d4a96a' }}>
+              Réinitialiser →
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
-            {filtered.map(product => (
-              <ProductCardV3 key={product.id} product={product} />
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filtered.map(p => <Card key={p.id} p={p} />)}
           </div>
         )}
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-10 px-5 lg:px-8 mt-12">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/v3" className="font-serif text-lux-muted/60 text-sm hover:text-lux-gold transition-colors">
-            ← Makiné
-          </Link>
-          <p className="text-lux-muted/30 text-xs">© {new Date().getFullYear()} Makiné</p>
-          <Link href="/checkout" className="text-xs text-lux-muted/60 hover:text-lux-gold transition-colors">
-            Panier →
-          </Link>
-        </div>
+      <footer className="px-6 py-8 flex items-center justify-between" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <Link href="/v3" className="text-sm transition-colors" style={{ color: 'rgba(240,237,232,0.3)' }}>← Makiné</Link>
+        <p className="text-xs" style={{ color: 'rgba(240,237,232,0.15)' }}>© {new Date().getFullYear()} Makiné</p>
+        <Link href="/checkout" className="text-sm transition-colors" style={{ color: 'rgba(240,237,232,0.3)' }}>Panier →</Link>
       </footer>
     </div>
   )
