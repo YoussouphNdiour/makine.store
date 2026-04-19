@@ -1,90 +1,85 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import { RefundButton, MarkDeliveredButton, ConfirmOrderButton, VerifyPaymentButton } from './AdminActions'
 import AdminShell from '@/components/AdminShell'
 import { ExportButton } from './ExportButton'
+import AdminOrdersClient from './AdminOrdersClient'
 
 export const dynamic = 'force-dynamic'
-import { OrderDetail } from './OrderDetail'
 
-// ─── Stat cards (existing 4) ────────────────────────────────────────────────
+// ── Theme tokens for server-rendered content ──────────────────────────────────
+const THEMES = {
+  dark: {
+    card:        'rgba(255,255,255,0.04)',
+    cardBorder:  'rgba(255,255,255,0.08)',
+    text:        '#f0ede8',
+    textMuted:   '#8a8498',
+    accent:      '#d4607a',
+    accentRgb:   '212,96,122',
+    sub:         'rgba(240,237,232,0.4)',
+  },
+  light: {
+    card:        '#fff',
+    cardBorder:  'rgba(0,0,0,0.06)',
+    text:        '#1a0a12',
+    textMuted:   '#9a7080',
+    accent:      '#9e3d58',
+    accentRgb:   '158,61,88',
+    sub:         'rgba(26,10,18,0.4)',
+  },
+}
+
+// ── Data fetching ─────────────────────────────────────────────────────────────
 async function getStats() {
   const [total, revenue, pending, confirmed] = await Promise.all([
     prisma.order.count(),
-    prisma.order.aggregate({
-      _sum: { totalAmount: true },
-      where: { paymentStatus: 'paid' },
-    }),
+    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { paymentStatus: 'paid' } }),
     prisma.order.count({ where: { paymentStatus: 'pending' } }),
     prisma.order.count({ where: { status: 'confirmed' } }),
   ])
   return { total, revenue: revenue._sum.totalAmount ?? 0, pending, confirmed }
 }
 
-// ─── New: revenue / activity stats (last 7 days) ────────────────────────────
 async function getRecentStats() {
   const now = new Date()
   const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const sevenDaysAgo = new Date(todayMidnight)
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  const yesterdayMidnight = new Date(todayMidnight)
+  yesterdayMidnight.setDate(yesterdayMidnight.getDate() - 1)
 
-  const [todayCount, weekRevenue, awaitingDelivery, waveStats] = await Promise.all([
-    // Commandes aujourd'hui
+  const [todayCount, yesterdayCount, weekRevenue, prevWeekRevenue, awaitingDelivery, waveStats] = await Promise.all([
     prisma.order.count({ where: { createdAt: { gte: todayMidnight } } }),
-    // Revenus cette semaine (hors annulées)
+    prisma.order.count({ where: { createdAt: { gte: yesterdayMidnight, lt: todayMidnight } } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { createdAt: { gte: sevenDaysAgo }, status: { not: 'cancelled' }, paymentStatus: 'paid' } }),
     prisma.order.aggregate({
       _sum: { totalAmount: true },
       where: {
-        createdAt: { gte: sevenDaysAgo },
+        createdAt: { gte: new Date(sevenDaysAgo.getTime() - 7 * 86400000), lt: sevenDaysAgo },
         status: { not: 'cancelled' },
         paymentStatus: 'paid',
       },
     }),
-    // En attente de livraison
-    prisma.order.count({
-      where: { status: { in: ['confirmed', 'shipped'] } },
-    }),
-    // Taux Wave
-    prisma.order.groupBy({
-      by: ['paymentMethod'],
-      _count: { id: true },
-      where: { paymentStatus: 'paid' },
-    }),
+    prisma.order.count({ where: { status: { in: ['confirmed', 'shipped'] } } }),
+    prisma.order.groupBy({ by: ['paymentMethod'], _count: { id: true }, where: { paymentStatus: 'paid' } }),
   ])
 
   const totalPaid = waveStats.reduce((s, r) => s + r._count.id, 0)
   const wavePaid = waveStats.find(r => r.paymentMethod === 'wave')?._count.id ?? 0
   const waveRate = totalPaid > 0 ? Math.round((wavePaid / totalPaid) * 100) : 0
+  const weekRev = weekRevenue._sum.totalAmount ?? 0
+  const prevRev = prevWeekRevenue._sum.totalAmount ?? 0
+  const revTrend = prevRev > 0 ? Math.round(((weekRev - prevRev) / prevRev) * 100) : null
 
-  return {
-    todayCount,
-    weekRevenue: weekRevenue._sum.totalAmount ?? 0,
-    awaitingDelivery,
-    waveRate,
-  }
+  return { todayCount, yesterdayCount, weekRevenue: weekRev, revTrend, awaitingDelivery, waveRate }
 }
 
-// ─── Orders query ────────────────────────────────────────────────────────────
 async function getOrders(paymentFilter: string, statusFilter: string) {
   const where: Record<string, unknown> = {}
-
-  // Payment filter tabs (existing)
-  if (paymentFilter === 'pending') where.paymentStatus = 'pending'
+  if (paymentFilter === 'pending')   where.paymentStatus = 'pending'
   else if (paymentFilter === 'paid') where.paymentStatus = 'paid'
   else if (paymentFilter === 'wave') where.paymentMethod = 'wave'
-
-  // Status filter tabs (new)
-  if (statusFilter && statusFilter !== 'all') {
-    where.status = statusFilter
-  }
-
-  // When paymentFilter is 'confirmed' it was actually a status filter in the
-  // original code — keep backward-compat: treat it as a status filter.
-  if (paymentFilter === 'confirmed') {
-    delete where.paymentStatus
-    where.status = 'confirmed'
-  }
-
+  if (statusFilter && statusFilter !== 'all') where.status = statusFilter
+  if (paymentFilter === 'confirmed') { delete where.paymentStatus; where.status = 'confirmed' }
   return prisma.order.findMany({
     where,
     include: { items: { include: { product: true } } },
@@ -93,32 +88,67 @@ async function getOrders(paymentFilter: string, statusFilter: string) {
   })
 }
 
-// ─── Small helpers ────────────────────────────────────────────────────────────
-function Badge({ text, className }: { text: string; className: string }) {
+// ── Stat card ─────────────────────────────────────────────────────────────────
+function StatCard({
+  icon, label, value, sub, accent, accentRgb, card, cardBorder, text, textMuted,
+  trend,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string | number
+  sub?: string
+  accent: string
+  accentRgb: string
+  card: string
+  cardBorder: string
+  text: string
+  textMuted: string
+  trend?: { value: number; direction: 'up' | 'down' | 'neutral' } | null
+}) {
   return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${className}`}>
-      {text}
-    </span>
+    <div
+      className="relative rounded-2xl p-5 flex flex-col gap-3 overflow-hidden transition-all"
+      style={{ background: card, border: `1px solid ${cardBorder}` }}
+    >
+      {/* Subtle glow */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: `radial-gradient(ellipse at 0% 0%, rgba(${accentRgb},0.08) 0%, transparent 60%)` }}
+      />
+
+      {/* Icon + trend */}
+      <div className="relative flex items-center justify-between">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
+          style={{ background: `rgba(${accentRgb},0.12)`, color: accent }}
+        >
+          {icon}
+        </div>
+        {trend !== null && trend !== undefined && (
+          <span
+            className="text-xs font-semibold px-2 py-0.5 rounded-full"
+            style={trend.direction === 'up'
+              ? { background: 'rgba(74,222,128,0.15)', color: '#4ade80' }
+              : trend.direction === 'down'
+              ? { background: 'rgba(248,113,113,0.15)', color: '#f87171' }
+              : { background: 'rgba(163,163,163,0.15)', color: '#a3a3a3' }}
+          >
+            {trend.direction === 'up' ? '▲' : trend.direction === 'down' ? '▼' : '–'} {Math.abs(trend.value)}%
+          </span>
+        )}
+      </div>
+
+      {/* Value + label */}
+      <div className="relative">
+        <p className="font-serif text-2xl font-bold leading-tight" style={{ color: text }}>{value}</p>
+        <p className="text-xs mt-0.5" style={{ color: textMuted }}>{label}</p>
+        {sub && <p className="text-[10px] mt-1" style={{ color: `rgba(${accentRgb},0.5)` }}>{sub}</p>}
+      </div>
+    </div>
   )
 }
 
-const paymentColors: Record<string, string> = {
-  paid: 'bg-green-100 text-green-700',
-  pending: 'bg-yellow-100 text-yellow-700',
-  confirmed: 'bg-blue-100 text-blue-700',
-  refunded: 'bg-purple-100 text-purple-700',
-  failed: 'bg-red-100 text-red-700',
-}
-
-const statusColors: Record<string, string> = {
-  new: 'bg-gray-100 text-gray-700',
-  confirmed: 'bg-blue-100 text-blue-700',
-  shipped: 'bg-indigo-100 text-indigo-700',
-  delivered: 'bg-teal-100 text-teal-700',
-  cancelled: 'bg-red-100 text-red-700',
-}
-
-// ─── Page ────────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default async function AdminPage({
   searchParams,
 }: {
@@ -127,282 +157,171 @@ export default async function AdminPage({
   const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin_dev'
   const isAuth = searchParams.key === adminPassword
   const adminTheme = (searchParams._theme === 'light' ? 'light' : 'dark') as 'dark' | 'light'
+  const t = THEMES[adminTheme]
 
   const paymentFilter = searchParams.filter ?? 'all'
-  const statusFilter = searchParams.status ?? 'all'
+  const statusFilter  = searchParams.status  ?? 'all'
 
   const [stats, recentStats, orders] = isAuth
     ? await Promise.all([getStats(), getRecentStats(), getOrders(paymentFilter, statusFilter)])
     : [
         { total: 0, revenue: 0, pending: 0, confirmed: 0 },
-        { todayCount: 0, weekRevenue: 0, awaitingDelivery: 0, waveRate: 0 },
+        { todayCount: 0, yesterdayCount: 0, weekRevenue: 0, revTrend: null, awaitingDelivery: 0, waveRate: 0 },
         [],
       ]
 
+  const todayTrend = recentStats.yesterdayCount > 0
+    ? {
+        value: Math.round(((recentStats.todayCount - recentStats.yesterdayCount) / recentStats.yesterdayCount) * 100),
+        direction: recentStats.todayCount >= recentStats.yesterdayCount ? 'up' as const : 'down' as const,
+      }
+    : null
+
+  const STAT_CARDS_ROW1 = [
+    {
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>,
+      label: 'Commandes total',
+      value: stats.total,
+      trend: null as null,
+    },
+    {
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+      label: 'Revenu encaissé',
+      value: `${stats.revenue.toLocaleString('fr-FR')} FCFA`,
+      trend: null as null,
+    },
+    {
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+      label: 'En attente paiement',
+      value: stats.pending,
+      trend: null as null,
+    },
+    {
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+      label: 'Confirmées',
+      value: stats.confirmed,
+      trend: null as null,
+    },
+  ]
+
+  const STAT_CARDS_ROW2 = [
+    {
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+      label: "Commandes aujourd'hui",
+      value: recentStats.todayCount,
+      sub: 'depuis minuit',
+      trend: todayTrend,
+    },
+    {
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>,
+      label: 'Revenus 7 jours',
+      value: `${recentStats.weekRevenue.toLocaleString('fr-FR')} FCFA`,
+      sub: 'commandes payées',
+      trend: recentStats.revTrend !== null ? { value: recentStats.revTrend, direction: (recentStats.revTrend >= 0 ? 'up' : 'down') as 'up' | 'down' } : null,
+    },
+    {
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>,
+      label: 'En attente livraison',
+      value: recentStats.awaitingDelivery,
+      sub: 'confirmées + expédiées',
+      trend: null as null,
+    },
+    {
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
+      label: 'Taux Wave (payés)',
+      value: `${recentStats.waveRate}%`,
+      sub: 'des paiements digitaux',
+      trend: null as null,
+    },
+  ]
+
   return (
     <AdminShell adminKey={searchParams.key} currentPath="/admin" theme={adminTheme}>
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-6">
 
-        {/* ── Toast confirmation après lien WhatsApp ── */}
+        {/* ── Confirmation toast ─────────────────────────────────────── */}
         {searchParams.confirmed && (
-          <div className="mb-4 bg-green-50 border border-green-200 rounded-xl px-5 py-3 flex items-center gap-3 text-green-800">
+          <div className="rounded-2xl px-5 py-3.5 flex items-center gap-3"
+            style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.2)', color: '#4ade80' }}>
             <span className="text-xl">✅</span>
             <div>
-              <p className="font-semibold text-sm">Commande <code className="bg-green-100 px-1.5 py-0.5 rounded">{searchParams.confirmed}</code> confirmée !</p>
-              <p className="text-xs text-green-600">Le client a été notifié par WhatsApp.</p>
+              <p className="font-semibold text-sm">
+                Commande <code className="px-1.5 py-0.5 rounded text-xs" style={{ background: 'rgba(74,222,128,0.15)' }}>{searchParams.confirmed}</code> confirmée !
+              </p>
+              <p className="text-xs opacity-70">Le client a été notifié par WhatsApp.</p>
             </div>
           </div>
         )}
 
-        {/* ── Page header with CSV export ── */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="font-serif text-2xl font-bold text-makine-black">Commandes</h1>
-          {isAuth && <ExportButton adminKey={searchParams.key ?? ''} />}
-        </div>
-
-        {/* ── Existing 4 stat cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-          {[
-            { label: 'Commandes total', value: stats.total, color: 'text-makine-black' },
-            {
-              label: 'Revenu (payé)',
-              value: `${stats.revenue.toLocaleString('fr-FR')} FCFA`,
-              color: 'text-makine-gold',
-            },
-            { label: 'En attente paiement', value: stats.pending, color: 'text-yellow-600' },
-            { label: 'Confirmées', value: stats.confirmed, color: 'text-blue-600' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="bg-white rounded-xl p-5 shadow-sm">
-              <p className="text-xs text-gray-400 mb-1">{label}</p>
-              <p className={`font-serif text-2xl font-bold ${color}`}>{value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Feature 3: Recent activity stat cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {[
-            {
-              label: 'Commandes aujourd\'hui',
-              value: recentStats.todayCount,
-              color: 'text-rose-deep',
-              sub: 'depuis minuit',
-            },
-            {
-              label: 'Revenus cette semaine',
-              value: `${recentStats.weekRevenue.toLocaleString('fr-FR')} FCFA`,
-              color: 'text-rose-wine',
-              sub: '7 derniers jours (payés)',
-            },
-            {
-              label: 'En attente livraison',
-              value: recentStats.awaitingDelivery,
-              color: 'text-indigo-600',
-              sub: 'confirmées + expédiées',
-            },
-            {
-              label: 'Taux Wave (payés)',
-              value: `${recentStats.waveRate}%`,
-              color: 'text-blue-600',
-              sub: 'commandes Wave payées',
-            },
-          ].map(({ label, value, color, sub }) => (
-            <div key={label} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-              <p className="text-xs text-gray-400 mb-1">{label}</p>
-              <p className={`font-serif text-2xl font-bold ${color}`}>{value}</p>
-              <p className="text-xs text-gray-300 mt-1">{sub}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Feature 4: Payment filter tabs (original) ── */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          {[
-            { key: 'all', label: 'Toutes' },
-            { key: 'pending', label: '⏳ En attente paiement' },
-            { key: 'paid', label: '✅ Payées' },
-            { key: 'confirmed', label: '📦 Confirmées' },
-            { key: 'wave', label: '💙 Wave' },
-          ].map(({ key, label }) => (
+        {/* ── Page header ────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-serif text-2xl font-bold" style={{ color: t.text }}>Commandes</h1>
+            <p className="text-sm mt-0.5" style={{ color: t.textMuted }}>Gestion et suivi des commandes</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {isAuth && <ExportButton adminKey={searchParams.key ?? ''} />}
             <Link
-              key={key}
-              href={`/admin?key=${adminPassword}&filter=${key}&status=${statusFilter}`}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                paymentFilter === key
-                  ? 'bg-makine-gold text-white shadow-sm'
-                  : 'bg-white text-gray-600 hover:bg-makine-beige'
-              }`}
+              href={`/admin/pos?key=${adminPassword}&_theme=${adminTheme}`}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02]"
+              style={{ background: t.accent, color: '#fff' }}
             >
-              {label}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Nouvelle vente
             </Link>
-          ))}
-        </div>
-
-        {/* ── Feature 4: Order status filter tabs (new) ── */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {[
-            { key: 'all', label: 'Tous statuts' },
-            { key: 'new', label: '🆕 Nouveau' },
-            { key: 'confirmed', label: '✅ Confirmé' },
-            { key: 'shipped', label: '🚚 Expédié' },
-            { key: 'delivered', label: '📬 Livré' },
-            { key: 'cancelled', label: '❌ Annulé' },
-          ].map(({ key, label }) => (
-            <Link
-              key={key}
-              href={`/admin?key=${adminPassword}&filter=${paymentFilter}&status=${key}`}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
-                statusFilter === key
-                  ? 'bg-makine-black text-white border-makine-black shadow-sm'
-                  : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-          <span className="ml-auto text-xs text-gray-400 self-center">
-            {orders.length} commande{orders.length > 1 ? 's' : ''}
-          </span>
-        </div>
-
-        {/* ── Orders table ── */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-makine-beige text-xs uppercase tracking-wide">
-                <tr>
-                  <th className="text-left px-4 py-3 font-semibold">Réf</th>
-                  <th className="text-left px-4 py-3 font-semibold">Client</th>
-                  <th className="text-left px-4 py-3 font-semibold">Articles</th>
-                  <th className="text-left px-4 py-3 font-semibold">Montant</th>
-                  <th className="text-left px-4 py-3 font-semibold">Paiement</th>
-                  <th className="text-left px-4 py-3 font-semibold">Statut</th>
-                  <th className="text-left px-4 py-3 font-semibold">WA</th>
-                  <th className="text-left px-4 py-3 font-semibold">Date</th>
-                  <th className="text-left px-4 py-3 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <code className="text-xs bg-gray-100 px-2 py-0.5 rounded font-mono">
-                        {order.id.slice(-8).toUpperCase()}
-                      </code>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <p className="font-medium leading-tight">{order.customerName}</p>
-                      <a
-                        href={`tel:${order.customerPhone}`}
-                        className="text-xs text-gray-400 hover:text-makine-gold"
-                      >
-                        {order.customerPhone}
-                      </a>
-                      {order.address && (
-                        <p className="text-xs text-gray-300 truncate max-w-[120px]">{order.address}</p>
-                      )}
-                    </td>
-
-                    {/* Feature 2: Articles column now uses OrderDetail expandable panel */}
-                    <td className="px-4 py-3">
-                      <OrderDetail
-                        orderId={order.id}
-                        currency={order.currency === 'XOF' ? 'FCFA' : '€'}
-                        items={order.items.map(item => ({
-                          name: item.product.name,
-                          quantity: item.quantity,
-                          price: item.price,
-                        }))}
-                      />
-                    </td>
-
-                    <td className="px-4 py-3 font-semibold whitespace-nowrap">
-                      {order.totalAmount.toLocaleString('fr-FR')}
-                      <span className="text-xs font-normal text-gray-400 ml-1">
-                        {order.currency === 'XOF' ? 'FCFA' : '€'}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col gap-1">
-                        <Badge
-                          text={order.paymentStatus}
-                          className={paymentColors[order.paymentStatus] ?? 'bg-gray-100 text-gray-700'}
-                        />
-                        <span className={`text-xs ${order.paymentMethod === 'wave' ? 'text-blue-500' : 'text-orange-500'}`}>
-                          {order.paymentMethod === 'wave' ? '💙 Wave' : '🟠 Orange'}
-                        </span>
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <Badge
-                        text={order.status}
-                        className={statusColors[order.status] ?? 'bg-gray-100 text-gray-700'}
-                      />
-                    </td>
-
-                    <td className="px-4 py-3 text-center text-base">
-                      {order.whatsappSent ? '✅' : '⏳'}
-                    </td>
-
-                    <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
-                      {new Date(order.createdAt).toLocaleDateString('fr-FR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: '2-digit',
-                      })}
-                      <br />
-                      {new Date(order.createdAt).toLocaleTimeString('fr-FR', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col gap-1.5 min-w-[110px]">
-                        <a
-                          href={`https://wa.me/${order.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
-                            `Bonjour ${order.customerName}, concernant votre commande Makiné #${order.id.slice(-8).toUpperCase()} 🌸`
-                          )}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-center text-xs bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600 transition-colors"
-                        >
-                          📱 WhatsApp
-                        </a>
-
-                        {order.status === 'new' && (
-                          <ConfirmOrderButton orderId={order.id} adminKey={adminPassword} />
-                        )}
-
-                        {['wave', 'orange_money'].includes(order.paymentMethod) && order.paymentStatus === 'pending' && (
-                          <VerifyPaymentButton orderId={order.id} adminKey={adminPassword} />
-                        )}
-
-                        {order.paymentMethod === 'wave' && order.paymentStatus === 'paid' && (
-                          <RefundButton orderId={order.id} adminKey={adminPassword} />
-                        )}
-
-                        {['confirmed', 'shipped'].includes(order.status) && (
-                          <MarkDeliveredButton orderId={order.id} adminKey={adminPassword} />
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {orders.length === 0 && (
-              <div className="text-center py-16 text-gray-400">
-                <p className="text-4xl mb-4">📭</p>
-                <p>Aucune commande pour ce filtre.</p>
-              </div>
-            )}
           </div>
         </div>
+
+        {/* ── Stat cards row 1 ───────────────────────────────────────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {STAT_CARDS_ROW1.map(card => (
+            <StatCard
+              key={card.label}
+              icon={card.icon}
+              label={card.label}
+              value={card.value}
+              trend={card.trend}
+              accent={t.accent}
+              accentRgb={t.accentRgb}
+              card={t.card}
+              cardBorder={t.cardBorder}
+              text={t.text}
+              textMuted={t.textMuted}
+            />
+          ))}
+        </div>
+
+        {/* ── Stat cards row 2 (recent) ──────────────────────────────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {STAT_CARDS_ROW2.map(card => (
+            <StatCard
+              key={card.label}
+              icon={card.icon}
+              label={card.label}
+              value={card.value}
+              sub={card.sub}
+              trend={card.trend}
+              accent={t.accent}
+              accentRgb={t.accentRgb}
+              card={t.card}
+              cardBorder={t.cardBorder}
+              text={t.text}
+              textMuted={t.textMuted}
+            />
+          ))}
+        </div>
+
+        {/* ── Orders table (client component with search) ─────────────── */}
+        <AdminOrdersClient
+          orders={orders}
+          theme={adminTheme}
+          adminKey={searchParams.key ?? ''}
+          paymentFilter={paymentFilter}
+          statusFilter={statusFilter}
+          adminPassword={adminPassword}
+        />
       </div>
     </AdminShell>
   )
