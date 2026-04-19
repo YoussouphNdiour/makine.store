@@ -97,7 +97,7 @@ export default function NavV3() {
 
             {/* Cart */}
             <Link
-              href="/checkout"
+              href="/checkout?theme=dark"
               className="relative flex items-center justify-center w-8 h-8 rounded-xl transition-all"
               style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,237,232,0.6)' }}
             >

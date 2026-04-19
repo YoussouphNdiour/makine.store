@@ -314,7 +314,7 @@ export default function BoutiqueV3() {
         <Link href="/v3" className="text-sm transition-colors hover:text-[#d4607a]"
           style={{ color: 'rgba(240,237,232,0.3)' }}>← Makiné</Link>
         <p className="text-xs" style={{ color: 'rgba(240,237,232,0.15)' }}>© {new Date().getFullYear()} Makiné</p>
-        <Link href="/checkout" className="text-sm transition-colors hover:text-[#d4607a]"
+        <Link href="/checkout?theme=dark" className="text-sm transition-colors hover:text-[#d4607a]"
           style={{ color: 'rgba(240,237,232,0.3)' }}>Panier →</Link>
       </footer>
     </div>

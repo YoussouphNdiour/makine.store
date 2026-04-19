@@ -90,6 +90,7 @@ export default function AdminShell({ adminKey, currentPath, children, theme = 'd
           <h1 className="font-serif text-2xl font-bold mb-1" style={{ color: t.text }}>Dashboard Makiné</h1>
           <p className="text-sm mb-6" style={{ color: t.textMuted }}>Accès réservé à l&apos;équipe</p>
           <form method="get">
+            <input type="hidden" name="_theme" value={theme} />
             <input type="password" name="key" placeholder="Mot de passe admin" autoFocus
               className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none mb-3 transition-colors"
               style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
@@ -138,7 +139,7 @@ export default function AdminShell({ adminKey, currentPath, children, theme = 'd
           {TABS.map(tab => {
             const active = currentPath === tab.href
             return (
-              <Link key={tab.href} href={`${tab.href}?key=${adminPassword}`}
+              <Link key={tab.href} href={`${tab.href}?key=${adminPassword}&_theme=${theme}`}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
                 style={active ? {
                   background: t.activeGrad,
@@ -192,7 +193,7 @@ export default function AdminShell({ adminKey, currentPath, children, theme = 'd
           {/* Mobile scrollable tabs */}
           <div className="lg:hidden flex gap-1 overflow-x-auto max-w-[60vw]">
             {TABS.map(tab => (
-              <Link key={tab.href} href={`${tab.href}?key=${adminPassword}`}
+              <Link key={tab.href} href={`${tab.href}?key=${adminPassword}&_theme=${theme}`}
                 className="flex-none px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors"
                 style={currentPath === tab.href ? {
                   background: `rgba(${t.accentRgb},0.12)`, color: t.accent,

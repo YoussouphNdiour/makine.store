@@ -57,7 +57,7 @@ const CONTACTS = [
       </svg>
     ),
     label: 'Localisation',
-    value: 'Dakar, Sénégal · Livraison France',
+    value: 'Thiès / Parcelle Assainie Unité 3 · Livraison partout au Sénégal & France',
     href: null,
     color: ACCENT,
     colorRgb: ACCENT_RGB,
@@ -130,7 +130,7 @@ export default function ContactV2() {
                   href={c.href}
                   target={c.external ? '_blank' : undefined}
                   rel={c.external ? 'noopener noreferrer' : undefined}
-                  className="flex items-start gap-4 p-5 rounded-2xl transition-all duration-200 block"
+                  className="flex items-start gap-4 p-5 rounded-2xl transition-all duration-200"
                   style={{
                     background: '#fff',
                     border: `1px solid rgba(${c.colorRgb},0.15)`,

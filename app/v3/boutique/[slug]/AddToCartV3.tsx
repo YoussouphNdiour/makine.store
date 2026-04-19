@@ -37,7 +37,7 @@ export default function AddToCartV3({ productId, inStock }: { productId: string;
       </button>
 
       <Link
-        href={`/checkout?product=${productId}`}
+        href={`/checkout?product=${productId}&theme=dark`}
         className="group flex items-center justify-center gap-3 w-full py-4 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-[1.02]"
         style={{ background: '#d4607a', color: '#fff' }}
       >

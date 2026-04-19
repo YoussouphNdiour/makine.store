@@ -105,7 +105,7 @@ export default function FooterV2() {
                 </a>
               </li>
               <li className="text-white/30 text-xs leading-relaxed pt-2">
-                📍 Thiès, Parcelle Assainie<br />
+                📍 Thiès / Parcelle Assainie Unité 3<br />
                 Horaires : 8h–20h ·{' '}
                 <span className="text-rose-medium">Lun–Sam</span>
               </li>
