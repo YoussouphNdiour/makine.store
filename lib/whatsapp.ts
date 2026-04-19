@@ -20,15 +20,27 @@ function normalizePhone(to: string): string {
   return to.replace(/[\s\-\(\)\.]/g, '')
 }
 
-// POST /api/send-message — texte
-// Body: { to: "+221...", text: "..." }
+// POST /api/send-message — texte (avec retry automatique si 429)
 export async function sendWhatsAppText(to: string, text: string): Promise<void> {
   if (!to || !text) throw new Error('[WA] to et text requis')
-  const res = await fetch(`${WA_BASE}/send-message`, {
+  const body = JSON.stringify({ to: normalizePhone(to), text })
+
+  const attempt = async () => fetch(`${WA_BASE}/send-message`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ to: normalizePhone(to), text }),
+    body,
   })
+
+  let res = await attempt()
+
+  // Retry once on 429 — wait retry_after seconds (max 10s)
+  if (res.status === 429) {
+    const err = await res.json().catch(() => ({} as { retry_after?: number }))
+    const wait = Math.min(err.retry_after ?? 5, 10) * 1000
+    await new Promise(r => setTimeout(r, wait))
+    res = await attempt()
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     console.error(`[WA] Erreur texte ${to}: HTTP ${res.status}`, err)

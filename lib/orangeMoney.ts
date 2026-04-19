@@ -17,7 +17,7 @@ export async function getOrangeMoneyToken(): Promise<string> {
 
   // ORANGE_MONEY_TOKEN_URL can override the token endpoint if the base URL path differs
   const tokenUrl = process.env.ORANGE_MONEY_TOKEN_URL
-    ?? `${requireEnv('ORANGE_MONEY_BASE_URL')}/oauth/v3/token`
+    ?? `${requireEnv('ORANGE_MONEY_BASE_URL')}/oauth/v2/token`
 
   console.log('[OM] Token URL:', tokenUrl)
   const res = await fetch(tokenUrl, {
