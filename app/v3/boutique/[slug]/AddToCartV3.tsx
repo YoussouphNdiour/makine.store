@@ -46,7 +46,7 @@ export default function AddToCartV3({ productId, inStock }: { productId: string;
       </Link>
 
       {added && (
-        <Link href="/checkout" className="text-center text-xs transition-colors" style={{ color: '#d4607a' }}>
+        <Link href="/checkout?theme=dark" className="text-center text-xs transition-colors" style={{ color: '#d4607a' }}>
           Voir mon panier →
         </Link>
       )}

@@ -323,7 +323,7 @@ export default async function V3Home() {
         <div className="flex gap-5 text-xs" style={{ color: 'rgba(240,237,232,0.25)' }}>
           <Link href="/v3/boutique" className="hover:text-[#d4607a] transition-colors">Boutique</Link>
           <a href="https://wa.me/221710581711" target="_blank" rel="noopener noreferrer" className="hover:text-green-400 transition-colors">WhatsApp</a>
-          <Link href="/checkout" className="hover:text-[#d4607a] transition-colors">Panier</Link>
+          <Link href="/checkout?theme=dark" className="hover:text-[#d4607a] transition-colors">Panier</Link>
         </div>
       </footer>
     </div>

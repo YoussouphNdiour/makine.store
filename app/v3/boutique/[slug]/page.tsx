@@ -245,7 +245,7 @@ export default async function ProductV3({ params }: { params: { slug: string } }
       <footer className="px-6 lg:px-12 py-8 flex items-center justify-between" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
         <Link href="/v3/boutique" className="text-sm transition-colors" style={{ color: 'rgba(240,237,232,0.3)' }}>← Boutique</Link>
         <p className="text-xs" style={{ color: 'rgba(240,237,232,0.15)' }}>© {new Date().getFullYear()} Makiné</p>
-        <Link href="/checkout" className="text-sm transition-colors" style={{ color: 'rgba(240,237,232,0.3)' }}>Panier →</Link>
+        <Link href="/checkout?theme=dark" className="text-sm transition-colors" style={{ color: 'rgba(240,237,232,0.3)' }}>Panier →</Link>
       </footer>
     </div>
   )
