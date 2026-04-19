@@ -3,6 +3,7 @@ import Link from 'next/link'
 import AdminShell from '@/components/AdminShell'
 import { ExportButton } from './ExportButton'
 import AdminOrdersClient from './AdminOrdersClient'
+import { AdminErrorBoundary } from './AdminErrorBoundary'
 
 export const dynamic = 'force-dynamic'
 
@@ -314,6 +315,7 @@ export default async function AdminPage({
         </div>
 
         {/* ── Orders table (client component with search) ─────────────── */}
+        <AdminErrorBoundary>
         <AdminOrdersClient
           orders={orders.map(o => ({
             id: o.id,
@@ -340,6 +342,7 @@ export default async function AdminPage({
           statusFilter={statusFilter}
           adminPassword={adminPassword}
         />
+        </AdminErrorBoundary>
       </div>
     </AdminShell>
   )
