@@ -10,6 +10,7 @@ const NAV = [
   { href: '/v2/boutique?cat=soins', label: 'Soins' },
   { href: '/v2/boutique?cat=huile', label: 'Huiles' },
   { href: '/v2/boutique?cat=gamme', label: 'Gammes' },
+  { href: '/v2/contact', label: 'Contact' },
 ]
 
 export default function HeaderV2({ transparent = false }: { transparent?: boolean }) {

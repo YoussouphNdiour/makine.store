@@ -27,7 +27,7 @@ export default function AddToCartV3({ productId, inStock }: { productId: string;
         className="flex items-center justify-center gap-3 w-full py-4 rounded-xl text-sm font-semibold transition-all duration-300"
         style={added
           ? { background: '#22c55e', color: '#fff' }
-          : { background: 'rgba(212,169,106,0.12)', border: '1px solid rgba(212,169,106,0.35)', color: '#d4a96a' }}
+          : { background: 'rgba(212,96,122,0.12)', border: '1px solid rgba(212,96,122,0.35)', color: '#d4607a' }}
       >
         {added ? (
           <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg> Ajouté !</>
@@ -39,14 +39,14 @@ export default function AddToCartV3({ productId, inStock }: { productId: string;
       <Link
         href={`/checkout?product=${productId}`}
         className="group flex items-center justify-center gap-3 w-full py-4 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-[1.02]"
-        style={{ background: '#d4a96a', color: '#06060e' }}
+        style={{ background: '#d4607a', color: '#fff' }}
       >
         Commander maintenant
         <span className="transition-transform group-hover:translate-x-1">→</span>
       </Link>
 
       {added && (
-        <Link href="/checkout" className="text-center text-xs transition-colors" style={{ color: '#d4a96a' }}>
+        <Link href="/checkout" className="text-center text-xs transition-colors" style={{ color: '#d4607a' }}>
           Voir mon panier →
         </Link>
       )}

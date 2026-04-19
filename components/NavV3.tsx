@@ -51,7 +51,7 @@ export default function NavV3() {
           {/* Logo */}
           <Link href="/v3" className="flex items-center gap-2.5 group flex-shrink-0">
             <div className="relative w-7 h-7 rounded-full overflow-hidden" style={{ boxShadow: '0 0 0 1px rgba(212,169,106,0.4)' }}>
-              <Image src="/images/lolo/logo.png" alt="Makiné" fill className="object-cover" />
+              <Image src="/images/logo/logo.png" alt="Makiné" fill className="object-cover" />
             </div>
             <span className="font-serif text-sm font-bold tracking-wide" style={{ color: '#f0ede8' }}>
               Makiné
@@ -65,6 +65,7 @@ export default function NavV3() {
               { href: '/v3/boutique?cat=gamme', label: 'Gammes' },
               { href: '/v3/boutique?cat=soins', label: 'Soins' },
               { href: '/v3/boutique?cat=huile', label: 'Huiles' },
+              { href: '/v3/contact', label: 'Contact' },
             ].map(({ href, label }) => (
               <Link
                 key={href}
@@ -139,6 +140,7 @@ export default function NavV3() {
               { href: '/v3/boutique?cat=soins', label: 'Soins Visage' },
               { href: '/v3/boutique?cat=huile', label: 'Huiles Précieuses' },
               { href: '/v3/boutique?cat=savon', label: 'Savons Artisanaux' },
+              { href: '/v3/contact', label: 'Contact' },
             ].map(({ href, label }) => (
               <Link
                 key={href}

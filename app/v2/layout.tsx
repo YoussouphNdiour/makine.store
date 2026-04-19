@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import ThemeToggle from '@/components/ThemeToggle'
 
 export const metadata: Metadata = {
   title: {
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
     locale: 'fr_FR',
     url: 'https://makine.store/v2',
     siteName: 'Makiné',
-    images: ['/images/lolo/logo.png'],
+    images: ['/images/logo/logo.png'],
   },
   twitter: {
     card: 'summary_large_image',
@@ -31,5 +32,10 @@ export const metadata: Metadata = {
 }
 
 export default function V2Layout({ children }: { children: ReactNode }) {
-  return <>{children}</>
+  return (
+    <>
+      {children}
+      <ThemeToggle />
+    </>
+  )
 }

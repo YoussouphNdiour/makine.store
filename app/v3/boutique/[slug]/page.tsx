@@ -59,9 +59,9 @@ export default async function ProductV3({ params }: { params: { slug: string } }
 
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-xs mb-10" style={{ color: 'rgba(240,237,232,0.3)' }}>
-          <Link href="/v3" className="hover:text-[#d4a96a] transition-colors">Accueil</Link>
+          <Link href="/v3" className="hover:text-[#d4607a] transition-colors">Accueil</Link>
           <span style={{ color: 'rgba(255,255,255,0.12)' }}>·</span>
-          <Link href="/v3/boutique" className="hover:text-[#d4a96a] transition-colors">Boutique</Link>
+          <Link href="/v3/boutique" className="hover:text-[#d4607a] transition-colors">Boutique</Link>
           <span style={{ color: 'rgba(255,255,255,0.12)' }}>·</span>
           <span className="truncate max-w-[160px]" style={{ color: 'rgba(240,237,232,0.6)' }}>{product.name}</span>
         </nav>
@@ -72,7 +72,7 @@ export default async function ProductV3({ params }: { params: { slug: string } }
           {/* ── LEFT: Image ───────────────────────────── */}
           <div className="relative">
             {/* Gold ambient glow */}
-            <div className="absolute -inset-12 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 50%, rgba(212,169,106,0.06) 0%, transparent 70%)' }} />
+            <div className="absolute -inset-12 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 50%, rgba(212,96,122,0.06) 0%, transparent 70%)' }} />
 
             <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: '4/5', border: '1px solid rgba(255,255,255,0.07)' }}>
               <Image
@@ -87,7 +87,7 @@ export default async function ProductV3({ params }: { params: { slug: string } }
               {/* Badge */}
               {product.badge && (
                 <div className="absolute top-5 left-5">
-                  <span className="text-xs font-semibold px-3.5 py-1.5 rounded-full" style={{ background: 'rgba(212,169,106,0.2)', color: '#d4a96a', border: '1px solid rgba(212,169,106,0.35)', backdropFilter: 'blur(12px)' }}>
+                  <span className="text-xs font-semibold px-3.5 py-1.5 rounded-full" style={{ background: 'rgba(212,96,122,0.2)', color: '#d4607a', border: '1px solid rgba(212,96,122,0.35)', backdropFilter: 'blur(12px)' }}>
                     {product.badge}
                   </span>
                 </div>
@@ -107,8 +107,8 @@ export default async function ProductV3({ params }: { params: { slug: string } }
 
             {/* Category */}
             <div className="flex items-center gap-3 mb-5">
-              <span className="w-8 h-px block" style={{ background: 'rgba(212,169,106,0.5)' }} />
-              <p className="text-xs font-semibold tracking-[0.25em] uppercase" style={{ color: 'rgba(212,169,106,0.7)' }}>
+              <span className="w-8 h-px block" style={{ background: 'rgba(212,96,122,0.5)' }} />
+              <p className="text-xs font-semibold tracking-[0.25em] uppercase" style={{ color: 'rgba(212,96,122,0.7)' }}>
                 {CAT[product.category] ?? product.category}
               </p>
             </div>
@@ -119,7 +119,7 @@ export default async function ProductV3({ params }: { params: { slug: string } }
             </h1>
 
             {/* Divider */}
-            <div className="mb-7" style={{ height: '1px', background: 'linear-gradient(to right, rgba(212,169,106,0.3), transparent)' }} />
+            <div className="mb-7" style={{ height: '1px', background: 'linear-gradient(to right, rgba(212,96,122,0.3), transparent)' }} />
 
             {/* Description */}
             <p className="text-base leading-relaxed mb-8" style={{ color: 'rgba(240,237,232,0.55)' }}>
@@ -146,7 +146,7 @@ export default async function ProductV3({ params }: { params: { slug: string } }
               <div className="flex flex-wrap gap-8 items-end">
                 {product.priceXOF > 0 && (
                   <div>
-                    <p className="font-serif font-bold" style={{ fontSize: '2.5rem', color: '#d4a96a', lineHeight: 1 }}>
+                    <p className="font-serif font-bold" style={{ fontSize: '2.5rem', color: '#d4607a', lineHeight: 1 }}>
                       {product.priceXOF.toLocaleString('fr-FR')}
                       <span className="text-lg font-normal ml-1.5" style={{ color: 'rgba(240,237,232,0.3)' }}>FCFA</span>
                     </p>
@@ -191,11 +191,11 @@ export default async function ProductV3({ params }: { params: { slug: string } }
 
             {/* Wholesale */}
             {product.wholesale && (
-              <div className="mt-5 rounded-xl p-4" style={{ background: 'rgba(212,169,106,0.05)', border: '1px solid rgba(212,169,106,0.15)' }}>
-                <p className="text-sm font-semibold mb-1" style={{ color: '#d4a96a' }}>💼 Vente en gros disponible</p>
+              <div className="mt-5 rounded-xl p-4" style={{ background: 'rgba(212,96,122,0.05)', border: '1px solid rgba(212,96,122,0.15)' }}>
+                <p className="text-sm font-semibold mb-1" style={{ color: '#d4607a' }}>💼 Vente en gros disponible</p>
                 <p className="text-xs" style={{ color: 'rgba(240,237,232,0.4)' }}>
                   Contactez-nous pour les tarifs revendeurs ·{' '}
-                  <a href="tel:+221710581711" className="hover:text-[#d4a96a] transition-colors" style={{ color: '#d4a96a' }}>+221 71 058 17 11</a>
+                  <a href="tel:+221710581711" className="hover:text-[#d4607a] transition-colors" style={{ color: '#d4607a' }}>+221 71 058 17 11</a>
                 </p>
               </div>
             )}
@@ -206,8 +206,8 @@ export default async function ProductV3({ params }: { params: { slug: string } }
         {related.length > 0 && (
           <div className="mt-24">
             <div className="flex items-center gap-3 mb-4">
-              <span className="w-8 h-px block" style={{ background: '#d4a96a' }} />
-              <p className="text-xs font-semibold tracking-[0.25em] uppercase" style={{ color: '#d4a96a' }}>Vous aimerez aussi</p>
+              <span className="w-8 h-px block" style={{ background: '#d4607a' }} />
+              <p className="text-xs font-semibold tracking-[0.25em] uppercase" style={{ color: '#d4607a' }}>Vous aimerez aussi</p>
             </div>
             <h2 className="font-serif font-bold mb-8" style={{ fontSize: '2rem', color: '#f0ede8', letterSpacing: '-0.02em' }}>
               Produits similaires
@@ -226,10 +226,10 @@ export default async function ProductV3({ params }: { params: { slug: string } }
                       <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(6,6,14,0.7) 0%, transparent 50%)' }} />
                     </div>
                     <div className="p-3.5">
-                      <h3 className="font-serif text-sm font-semibold leading-tight mb-1 transition-colors group-hover:text-[#d4a96a] line-clamp-2" style={{ color: '#f0ede8' }}>
+                      <h3 className="font-serif text-sm font-semibold leading-tight mb-1 transition-colors group-hover:text-[#d4607a] line-clamp-2" style={{ color: '#f0ede8' }}>
                         {p.name}
                       </h3>
-                      <p className="text-xs font-medium" style={{ color: '#d4a96a' }}>
+                      <p className="text-xs font-medium" style={{ color: '#d4607a' }}>
                         {p.priceXOF > 0 ? `${p.priceXOF.toLocaleString('fr-FR')} FCFA` : p.price > 0 ? `${p.price.toFixed(2)} €` : 'Sur demande'}
                       </p>
                     </div>
