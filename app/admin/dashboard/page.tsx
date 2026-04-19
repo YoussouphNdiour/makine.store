@@ -55,8 +55,9 @@ const PAYMENT_LABELS: Record<string, string> = {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { key?: string }
+  searchParams: { key?: string; _theme?: string }
 }) {
+  const adminTheme = (searchParams._theme === 'light' ? 'light' : 'dark') as 'dark' | 'light'
   const now = new Date()
   const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const fourteenDaysAgo = new Date(todayMidnight)
@@ -169,7 +170,7 @@ export default async function DashboardPage({
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <AdminShell adminKey={searchParams.key} currentPath="/admin/dashboard">
+    <AdminShell adminKey={searchParams.key} currentPath="/admin/dashboard" theme={adminTheme}>
       <div className="max-w-7xl mx-auto px-4 py-8">
 
         {/* ── Page header ── */}

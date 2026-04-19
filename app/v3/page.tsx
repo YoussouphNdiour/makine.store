@@ -1,8 +1,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
-import { getProductImageUrl } from '@/data/productImages'
 import NavV3 from '@/components/NavV3'
+import V3EditorialSection from '@/components/V3EditorialSection'
+import V3GallerySection from '@/components/V3GallerySection'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,10 +28,9 @@ export default async function V3Home() {
   })
 
   const hero = products[0]
-  const bento = products.slice(0, 6)
 
   return (
-    <div style={{ background: '#06060e', color: '#f0ede8', fontFamily: 'var(--font-inter), Inter, sans-serif' }} className="min-h-screen overflow-x-hidden">
+    <div style={{ background: '#06060e', color: '#f0ede8', fontFamily: 'var(--font-inter), Inter, sans-serif' }} className="min-h-screen overflow-x-hidden" data-theme="dark-rose">
       <NavV3 />
 
       {/* ════════════════════════════════════════════
@@ -56,15 +56,15 @@ export default async function V3Home() {
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(6,6,14,0.7) 0%, transparent 60%)' }} />
 
         {/* Gold orbs */}
-        <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,169,106,0.06) 0%, transparent 70%)' }} />
+        <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,96,122,0.06) 0%, transparent 70%)' }} />
 
         {/* Content */}
         <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 pb-20 pt-32 w-full">
 
           {/* Eyebrow */}
           <div className="flex items-center gap-3 mb-8">
-            <span className="inline-block w-10 h-px" style={{ background: '#d4a96a' }} />
-            <span className="text-xs font-semibold tracking-[0.3em] uppercase" style={{ color: '#d4a96a' }}>
+            <span className="inline-block w-10 h-px" style={{ background: '#d4607a' }} />
+            <span className="text-xs font-semibold tracking-[0.3em] uppercase" style={{ color: '#d4607a' }}>
               Cosmétiques Naturels
             </span>
           </div>
@@ -72,7 +72,7 @@ export default async function V3Home() {
           {/* Massive headline */}
           <h1 className="font-serif font-bold leading-[0.92] mb-10" style={{ fontSize: 'clamp(3.5rem, 10vw, 8rem)', letterSpacing: '-0.03em' }}>
             <span className="block" style={{ color: '#f0ede8' }}>La beauté</span>
-            <span className="block text-gold-shimmer">authentique</span>
+            <span className="block text-rose-shimmer">authentique</span>
             <span className="block" style={{ color: 'rgba(240,237,232,0.5)' }}>commence ici.</span>
           </h1>
 
@@ -80,14 +80,14 @@ export default async function V3Home() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
             <p className="max-w-md text-base leading-relaxed" style={{ color: 'rgba(240,237,232,0.55)' }}>
               Gammes corporelles, huiles précieuses et soins artisanaux formulés pour tous les teints.
-              <span style={{ color: '#d4a96a' }}> Sénégal & France.</span>
+              <span style={{ color: '#d4607a' }}> Sénégal & France.</span>
             </p>
 
             <div className="flex items-center gap-3">
               <Link
                 href="/v3/boutique"
                 className="group inline-flex items-center gap-3 px-7 py-3.5 rounded-full text-sm font-semibold transition-all duration-300"
-                style={{ background: '#d4a96a', color: '#06060e' }}
+                style={{ background: '#d4607a', color: '#06060e' }}
               >
                 Découvrir
                 <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
@@ -116,7 +116,7 @@ export default async function V3Home() {
               { n: '∞',   l: 'Résultats' },
             ].map(({ n, l }, i) => (
               <div key={l} className="flex-1 pt-6 pr-4" style={{ borderRight: i < 3 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                <p className="font-serif font-bold text-3xl" style={{ color: '#d4a96a' }}>{n}</p>
+                <p className="font-serif font-bold text-3xl" style={{ color: '#d4607a' }}>{n}</p>
                 <p className="text-xs mt-1 tracking-wide uppercase" style={{ color: 'rgba(240,237,232,0.35)' }}>{l}</p>
               </div>
             ))}
@@ -127,86 +127,32 @@ export default async function V3Home() {
       {/* ════════════════════════════════════════════
           TICKER MARQUEE
       ════════════════════════════════════════════ */}
-      <div className="relative py-5 overflow-hidden border-y" style={{ borderColor: 'rgba(212,169,106,0.15)', background: 'rgba(212,169,106,0.03)' }}>
+      <div className="relative py-5 overflow-hidden border-y" style={{ borderColor: 'rgba(212,96,122,0.15)', background: 'rgba(212,96,122,0.03)' }}>
         <div className="flex animate-marquee whitespace-nowrap">
           {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
             <span key={i} className="inline-flex items-center gap-6 mx-6">
-              <span className="text-xs font-semibold tracking-[0.3em] uppercase" style={{ color: 'rgba(212,169,106,0.7)' }}>{item}</span>
-              <span style={{ color: 'rgba(212,169,106,0.25)', fontSize: '6px' }}>◆</span>
+              <span className="text-xs font-semibold tracking-[0.3em] uppercase" style={{ color: 'rgba(212,96,122,0.7)' }}>{item}</span>
+              <span style={{ color: 'rgba(212,96,122,0.25)', fontSize: '6px' }}>◆</span>
             </span>
           ))}
         </div>
       </div>
 
       {/* ════════════════════════════════════════════
-          BENTO GRID — asymmetric product showcase
+          EDITORIAL — philosophie + floating image + produits
       ════════════════════════════════════════════ */}
-      <section className="py-24 px-6 lg:px-12 max-w-7xl mx-auto">
-        <div className="flex items-end justify-between mb-12">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.25em] uppercase mb-3" style={{ color: '#d4a96a' }}>Collection</p>
-            <h2 className="font-serif font-bold" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', letterSpacing: '-0.02em', color: '#f0ede8' }}>
-              Nos Bestsellers
-            </h2>
-          </div>
-          <Link href="/v3/boutique" className="hidden md:flex items-center gap-2 text-sm transition-colors group" style={{ color: 'rgba(240,237,232,0.4)' }}>
-            Voir tout
-            <span className="transition-transform group-hover:translate-x-1">→</span>
-          </Link>
-        </div>
-
-        {/* Bento grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          {bento.map((p, i) => {
-            const imgUrl = (p as { imageUrl?: string | null }).imageUrl || getProductImageUrl(p.slug)
-            const isBig = i === 0 || i === 5
-            return (
-              <Link
-                key={p.id}
-                href={`/v3/boutique/${p.slug}`}
-                className={`group relative lux-card-hover rounded-2xl overflow-hidden lux-img-overlay ${isBig ? 'md:col-span-2 md:row-span-2' : ''}`}
-                style={{
-                  aspectRatio: isBig ? '16/9' : '3/4',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                }}
-              >
-                <Image
-                  src={imgUrl}
-                  alt={p.name}
-                  fill
-                  sizes={isBig ? '(max-width: 768px) 100vw, 66vw' : '(max-width: 768px) 50vw, 33vw'}
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
-                  style={{ filter: 'brightness(0.7) saturate(0.85)' }}
-                />
-                {/* Gold tint on hover */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'rgba(212,169,106,0.06)' }} />
-
-                {/* Badge */}
-                {p.badge && (
-                  <div className="absolute top-4 left-4 z-10">
-                    <span className="text-[11px] font-semibold px-3 py-1 rounded-full" style={{ background: 'rgba(212,169,106,0.2)', color: '#d4a96a', border: '1px solid rgba(212,169,106,0.3)', backdropFilter: 'blur(8px)' }}>
-                      {p.badge}
-                    </span>
-                  </div>
-                )}
-
-                {/* Info overlay at bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5 z-10">
-                  <p className="font-serif font-bold leading-tight mb-1 transition-colors group-hover:text-[#d4a96a]" style={{ fontSize: isBig ? '1.25rem' : '0.9rem', color: '#f0ede8' }}>
-                    {p.name}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold" style={{ color: '#d4a96a' }}>{px(p)}</p>
-                    <span className="text-xs opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all duration-300" style={{ color: 'rgba(240,237,232,0.5)' }}>
-                      Voir →
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
-      </section>
+      <V3EditorialSection
+        products={products.map(p => ({
+          id: p.id, slug: p.slug, name: p.name, price: p.price, priceXOF: p.priceXOF,
+          imageUrl: (p as { imageUrl?: string | null }).imageUrl,
+        }))}
+        accent="#d4607a"
+        accentRgb="212,96,122"
+        bg="rgba(255,255,255,0.03)"
+        textMuted="rgba(240,237,232,0.4)"
+        borderColor="rgba(255,255,255,0.06)"
+        dark={true}
+      />
 
       {/* ════════════════════════════════════════════
           CATEGORIES — full-width horizontal strip
@@ -235,18 +181,18 @@ export default async function V3Home() {
               />
               <div className="absolute inset-0 transition-all duration-500" style={{ background: 'linear-gradient(to top, rgba(6,6,14,0.9) 0%, rgba(6,6,14,0.3) 60%, transparent 100%)' }} />
               {/* Gold shimmer on hover */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'linear-gradient(135deg, rgba(212,169,106,0.12) 0%, transparent 60%)' }} />
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'linear-gradient(135deg, rgba(212,96,122,0.12) 0%, transparent 60%)' }} />
 
               <div className="absolute inset-0 flex flex-col justify-between p-4 md:p-5">
-                <span className="text-xs font-semibold" style={{ color: 'rgba(212,169,106,0.4)' }}>{n}</span>
+                <span className="text-xs font-semibold" style={{ color: 'rgba(212,96,122,0.4)' }}>{n}</span>
                 <div>
                   <p className="text-xs mb-0.5" style={{ color: 'rgba(240,237,232,0.4)' }}>{sub}</p>
-                  <h3 className="font-serif font-bold text-lg transition-colors group-hover:text-[#d4a96a]" style={{ color: '#f0ede8' }}>
+                  <h3 className="font-serif font-bold text-lg transition-colors group-hover:text-[#d4607a]" style={{ color: '#f0ede8' }}>
                     {label}
                   </h3>
                   <div className="flex items-center gap-2 mt-2 translate-y-1 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                    <div className="h-px flex-1" style={{ background: 'rgba(212,169,106,0.5)' }} />
-                    <span className="text-xs" style={{ color: '#d4a96a' }}>→</span>
+                    <div className="h-px flex-1" style={{ background: 'rgba(212,96,122,0.5)' }} />
+                    <span className="text-xs" style={{ color: '#d4607a' }}>→</span>
                   </div>
                 </div>
               </div>
@@ -259,19 +205,19 @@ export default async function V3Home() {
           EDITORIAL QUOTE
       ════════════════════════════════════════════ */}
       <section className="py-28 px-6 lg:px-12 text-center relative overflow-hidden">
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(212,169,106,0.05) 0%, transparent 70%)' }} />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(212,169,106,0.4), transparent)' }} />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(212,96,122,0.05) 0%, transparent 70%)' }} />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(212,96,122,0.4), transparent)' }} />
 
-        <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-10" style={{ color: 'rgba(212,169,106,0.5)' }}>Makiné</p>
+        <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-10" style={{ color: 'rgba(212,96,122,0.5)' }}>Makiné</p>
 
         <blockquote className="font-serif font-bold leading-[1.1] max-w-4xl mx-auto" style={{ fontSize: 'clamp(2rem, 6vw, 5rem)', letterSpacing: '-0.02em' }}>
           <span style={{ color: 'rgba(240,237,232,0.2)' }}>"</span>
           <span style={{ color: '#f0ede8' }}>Née à </span>
-          <em className="not-italic text-gold-shimmer">Thiès</em>
+          <em className="not-italic text-rose-shimmer">Thiès</em>
           <span style={{ color: '#f0ede8' }}>, portée</span>
           <br />
           <span style={{ color: '#f0ede8' }}>jusqu&apos;à </span>
-          <em className="not-italic text-gold-shimmer">Paris</em>
+          <em className="not-italic text-rose-shimmer">Paris</em>
           <span style={{ color: 'rgba(240,237,232,0.2)' }}>"</span>
         </blockquote>
 
@@ -281,54 +227,9 @@ export default async function V3Home() {
       </section>
 
       {/* ════════════════════════════════════════════
-          SHOOTING GALLERY — masonry overlap
+          GALLERY — 3-col alternating scroll (V4)
       ════════════════════════════════════════════ */}
-      <section className="py-12 px-6 lg:px-12 max-w-7xl mx-auto">
-        <div className="flex items-end justify-between mb-10">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.25em] uppercase mb-3" style={{ color: '#d4a96a' }}>Shooting</p>
-            <h2 className="font-serif font-bold" style={{ fontSize: 'clamp(1.8rem, 4vw, 3rem)', color: '#f0ede8', letterSpacing: '-0.02em' }}>
-              La beauté<br />en images
-            </h2>
-          </div>
-          <a href="https://www.tiktok.com/@makineparis" target="_blank" rel="noopener noreferrer"
-            className="text-xs transition-colors hidden md:block" style={{ color: 'rgba(240,237,232,0.3)' }}>
-            @makineparis →
-          </a>
-        </div>
-
-        {/* 3-column mosaic */}
-        <div className="grid grid-cols-3 gap-3">
-          {/* col 1 — tall */}
-          <div className="flex flex-col gap-3">
-            <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '3/4' }}>
-              <Image src="/images/shooting/hero-ebony.jpg" alt="" fill sizes="33vw" className="object-cover" style={{ filter: 'brightness(0.6) saturate(0.8)' }} />
-              <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(6,6,14,0.6) 0%, transparent 50%)' }} />
-            </div>
-            <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '1/1' }}>
-              <Image src="/images/shooting/model-gloss.jpg" alt="" fill sizes="33vw" className="object-cover" style={{ filter: 'brightness(0.6) saturate(0.8)' }} />
-            </div>
-          </div>
-          {/* col 2 — offset top */}
-          <div className="flex flex-col gap-3 mt-8">
-            <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '3/4' }}>
-              <Image src="/images/shooting/trio-sourires.jpg" alt="" fill sizes="33vw" className="object-cover" style={{ filter: 'brightness(0.6) saturate(0.8)' }} />
-            </div>
-            <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
-              <Image src="/images/shooting/trio-produits.jpg" alt="" fill sizes="33vw" className="object-cover" style={{ filter: 'brightness(0.6) saturate(0.8)' }} />
-            </div>
-          </div>
-          {/* col 3 */}
-          <div className="flex flex-col gap-3">
-            <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '1/1' }}>
-              <Image src="/images/shooting/model-gommage.jpg" alt="" fill sizes="33vw" className="object-cover" style={{ filter: 'brightness(0.6) saturate(0.8)' }} />
-            </div>
-            <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '3/5' }}>
-              <Image src="/images/shooting/model-brume.jpg" alt="" fill sizes="33vw" className="object-cover" style={{ filter: 'brightness(0.6) saturate(0.8)' }} />
-            </div>
-          </div>
-        </div>
-      </section>
+      <V3GallerySection accent="#d4607a" accentRgb="212,96,122" dark={true} />
 
       {/* ════════════════════════════════════════════
           VALUES — 4-column cards
@@ -343,7 +244,7 @@ export default async function V3Home() {
           ].map(({ icon, title, desc }) => (
             <div
               key={title}
-              className="rounded-2xl p-5 transition-all duration-300 hover:border-[rgba(212,169,106,0.2)]"
+              className="rounded-2xl p-5 transition-all duration-300 hover:border-[rgba(212,96,122,0.2)]"
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
             >
               <span className="text-2xl block mb-4">{icon}</span>
@@ -360,11 +261,11 @@ export default async function V3Home() {
       <section className="relative py-40 px-6 lg:px-12 text-center overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #0c0b18 0%, #06060e 50%, #13111f 100%)' }} />
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 60%, rgba(212,169,106,0.1) 0%, transparent 65%)' }} />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 60%, rgba(212,96,122,0.1) 0%, transparent 65%)' }} />
 
         {/* Decorative lines */}
-        <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(212,169,106,0.3), transparent)' }} />
-        <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(212,169,106,0.15), transparent)' }} />
+        <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(212,96,122,0.3), transparent)' }} />
+        <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(212,96,122,0.15), transparent)' }} />
 
         {/* Watermark */}
         <div className="absolute inset-0 flex items-center justify-center overflow-hidden select-none pointer-events-none">
@@ -372,13 +273,13 @@ export default async function V3Home() {
         </div>
 
         <div className="relative z-10 max-w-3xl mx-auto">
-          <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-8" style={{ color: 'rgba(212,169,106,0.5)' }}>
+          <p className="text-xs font-semibold tracking-[0.3em] uppercase mb-8" style={{ color: 'rgba(212,96,122,0.5)' }}>
             Commander maintenant
           </p>
           <h2 className="font-serif font-bold leading-tight mb-6" style={{ fontSize: 'clamp(2.5rem, 7vw, 5.5rem)', letterSpacing: '-0.03em' }}>
             <span style={{ color: '#f0ede8' }}>Prête à sublimer</span>
             <br />
-            <span className="text-gold-shimmer">votre peau ?</span>
+            <span className="text-rose-shimmer">votre peau ?</span>
           </h2>
           <p className="text-base leading-relaxed mb-12 max-w-lg mx-auto" style={{ color: 'rgba(240,237,232,0.4)' }}>
             Paiement sécurisé Wave & Orange Money. Livraison express au Sénégal et en France.
@@ -388,7 +289,7 @@ export default async function V3Home() {
             <Link
               href="/v3/boutique"
               className="group inline-flex items-center gap-3 px-8 py-4 rounded-full text-sm font-bold transition-all duration-300 hover:scale-105"
-              style={{ background: '#d4a96a', color: '#06060e' }}
+              style={{ background: '#d4607a', color: '#06060e' }}
             >
               Voir la boutique
               <span className="transition-transform group-hover:translate-x-1">→</span>
@@ -408,9 +309,9 @@ export default async function V3Home() {
           </div>
 
           <div className="flex flex-wrap justify-center gap-6 text-xs" style={{ color: 'rgba(240,237,232,0.25)' }}>
-            <a href="tel:+221710581711" className="hover:text-[#d4a96a] transition-colors">🇸🇳 +221 71 058 17 11</a>
-            <a href="tel:+33761783612" className="hover:text-[#d4a96a] transition-colors">🇫🇷 +33 7 61 78 36 12</a>
-            <a href="mailto:fatimata6590@gmail.com" className="hover:text-[#d4a96a] transition-colors">fatimata6590@gmail.com</a>
+            <a href="tel:+221710581711" className="hover:text-[#d4607a] transition-colors">🇸🇳 +221 71 058 17 11</a>
+            <a href="tel:+33761783612" className="hover:text-[#d4607a] transition-colors">🇫🇷 +33 7 61 78 36 12</a>
+            <a href="mailto:fatimata6590@gmail.com" className="hover:text-[#d4607a] transition-colors">fatimata6590@gmail.com</a>
           </div>
         </div>
       </section>
@@ -420,9 +321,9 @@ export default async function V3Home() {
         <span className="font-serif text-sm" style={{ color: 'rgba(240,237,232,0.3)' }}>Makiné</span>
         <p className="text-xs" style={{ color: 'rgba(240,237,232,0.2)' }}>© {new Date().getFullYear()} Makiné — Cosmétiques Naturels</p>
         <div className="flex gap-5 text-xs" style={{ color: 'rgba(240,237,232,0.25)' }}>
-          <Link href="/v3/boutique" className="hover:text-[#d4a96a] transition-colors">Boutique</Link>
+          <Link href="/v3/boutique" className="hover:text-[#d4607a] transition-colors">Boutique</Link>
           <a href="https://wa.me/221710581711" target="_blank" rel="noopener noreferrer" className="hover:text-green-400 transition-colors">WhatsApp</a>
-          <Link href="/checkout" className="hover:text-[#d4a96a] transition-colors">Panier</Link>
+          <Link href="/checkout" className="hover:text-[#d4607a] transition-colors">Panier</Link>
         </div>
       </footer>
     </div>

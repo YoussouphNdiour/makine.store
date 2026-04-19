@@ -38,9 +38,10 @@ function nextMonth(month: number, year: number) {
 export default async function ComptabilitePage({
   searchParams,
 }: {
-  searchParams: { key?: string; month?: string; year?: string }
+  searchParams: { key?: string; month?: string; year?: string ; _theme?: string }
 }) {
   const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin_dev'
+  const adminTheme = (searchParams._theme === 'light' ? 'light' : 'dark') as 'dark' | 'light'
   const isAuth = searchParams.key === adminPassword
 
   const now = new Date()
@@ -55,7 +56,7 @@ export default async function ComptabilitePage({
 
   if (!isAuth) {
     return (
-      <AdminShell adminKey={searchParams.key} currentPath="/admin/comptabilite">
+      <AdminShell adminKey={searchParams.key} currentPath="/admin/comptabilite" theme={adminTheme}>
         <div />
       </AdminShell>
     )
@@ -179,7 +180,7 @@ export default async function ComptabilitePage({
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <AdminShell adminKey={searchParams.key} currentPath="/admin/comptabilite">
+    <AdminShell adminKey={searchParams.key} currentPath="/admin/comptabilite" theme={adminTheme}>
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-8">
 
         {/* ── Header + period selector ──────────────────────────────────────── */}

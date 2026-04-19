@@ -199,6 +199,23 @@ html {
     animation: marquee 28s linear infinite;
   }
 
+  /* Rose shimmer text (dark version) */
+  .text-rose-shimmer {
+    background: linear-gradient(
+      90deg,
+      #7a2840 0%,
+      #f0a8b8 35%,
+      #d4607a 50%,
+      #f0a8b8 65%,
+      #7a2840 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 5s linear infinite;
+  }
+
   /* Gold shimmer text */
   .text-gold-shimmer {
     background: linear-gradient(

@@ -7,8 +7,9 @@ export const dynamic = 'force-dynamic'
 export default async function BroadcastPage({
   searchParams,
 }: {
-  searchParams: { key?: string }
+  searchParams: { key?: string; _theme?: string }
 }) {
+  const adminTheme = (searchParams._theme === 'light' ? 'light' : 'dark') as 'dark' | 'light'
   // Stats for display
   const [totalPaid, totalSN, totalFR, totalWholesale] = await Promise.all([
     prisma.order.groupBy({ by: ['customerPhone'], where: { paymentStatus: 'paid' } }).then(r => r.length),
@@ -18,7 +19,7 @@ export default async function BroadcastPage({
   ])
 
   return (
-    <AdminShell adminKey={searchParams.key} currentPath="/admin/broadcast">
+    <AdminShell adminKey={searchParams.key} currentPath="/admin/broadcast" theme={adminTheme}>
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="font-serif text-2xl font-bold text-rose-wine mb-1">📣 Broadcast WhatsApp</h1>

@@ -122,10 +122,11 @@ const statusColors: Record<string, string> = {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: { key?: string; filter?: string; status?: string; confirmed?: string }
+  searchParams: { key?: string; filter?: string; status?: string; confirmed?: string; _theme?: string }
 }) {
   const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin_dev'
   const isAuth = searchParams.key === adminPassword
+  const adminTheme = (searchParams._theme === 'light' ? 'light' : 'dark') as 'dark' | 'light'
 
   const paymentFilter = searchParams.filter ?? 'all'
   const statusFilter = searchParams.status ?? 'all'
@@ -139,7 +140,7 @@ export default async function AdminPage({
       ]
 
   return (
-    <AdminShell adminKey={searchParams.key} currentPath="/admin">
+    <AdminShell adminKey={searchParams.key} currentPath="/admin" theme={adminTheme}>
       <div className="max-w-7xl mx-auto px-4 py-6">
 
         {/* ── Toast confirmation après lien WhatsApp ── */}

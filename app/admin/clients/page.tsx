@@ -60,8 +60,9 @@ function isActiveSession(state: string) {
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: { key?: string; q?: string; section?: string }
+  searchParams: { key?: string; q?: string; section?: string; _theme?: string }
 }) {
+  const adminTheme = (searchParams._theme === 'light' ? 'light' : 'dark') as 'dark' | 'light'
   // ── Data fetching ──────────────────────────────────────────────────────────
   const allOrders = await prisma.order.findMany({
     include: { items: true },
@@ -135,7 +136,7 @@ export default async function ClientsPage({
   const activeSessions = sessions.filter((s) => isActiveSession(s.state))
 
   return (
-    <AdminShell adminKey={searchParams.key} currentPath="/admin/clients">
+    <AdminShell adminKey={searchParams.key} currentPath="/admin/clients" theme={adminTheme}>
       <div className="max-w-7xl mx-auto px-4 py-8">
 
         {/* ── Page header ── */}

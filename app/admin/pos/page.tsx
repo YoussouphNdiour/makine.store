@@ -5,9 +5,10 @@ import POSInterface from './POSInterface'
 export default async function AdminPOSPage({
   searchParams,
 }: {
-  searchParams: { key?: string }
+  searchParams: { key?: string ; _theme?: string }
 }) {
   const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin_dev'
+  const adminTheme = (searchParams._theme === 'light' ? 'light' : 'dark') as 'dark' | 'light'
   const isAuth = searchParams.key === adminPassword
 
   const products = isAuth
@@ -19,7 +20,7 @@ export default async function AdminPOSPage({
     : []
 
   return (
-    <AdminShell adminKey={searchParams.key} currentPath="/admin/pos">
+    <AdminShell adminKey={searchParams.key} currentPath="/admin/pos" theme={adminTheme}>
       <div className="max-w-7xl mx-auto px-4 py-4">
         <POSInterface products={products} adminKey={adminPassword} />
       </div>
