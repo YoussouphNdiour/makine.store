@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { getWaveCheckoutSession } from '@/lib/wave'
 import { checkOrangeMoneyStatus } from '@/lib/orangeMoney'
-import { sendOrderConfirmation } from '@/lib/whatsapp'
+import { sendOrderConfirmation } from '@/lib/whatsappBot'
 
 const WAVE_SUCCESS_STATUSES = ['succeeded', 'completed', 'paid']
 const OM_SUCCESS_STATUSES = ['SUCCESS', 'SUCCESSFUL', 'SUCCESSFULL']
