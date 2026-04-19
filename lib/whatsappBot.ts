@@ -89,10 +89,15 @@ async function notifyAdmin(order: {
       : `${order.totalAmount.toFixed(2)} €`
   const ref = order.id.slice(-8).toUpperCase()
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://makine.store'
-  const confirmUrl = `${appUrl}/api/admin/confirm?ref=${ref}&key=${process.env.ADMIN_PASSWORD ?? ''}`
+  // Lien vers le dashboard (pas un lien d'action directe — évite l'auto-confirm par les bots WA)
+  const dashboardUrl = `${appUrl}/admin?key=${process.env.ADMIN_PASSWORD ?? ''}`
+  const isDigitalPayment = order.paymentMethod === 'wave' || order.paymentMethod === 'orange_money'
+  const paymentNote = isDigitalPayment
+    ? `⏳ En attente paiement ${order.paymentMethod === 'wave' ? 'Wave 💙' : 'Orange Money 🟠'}`
+    : `💳 ${order.paymentMethod}`
   await sendWhatsAppText(
     ADMIN_NUMBER,
-    `🆕 *Nouvelle commande Makiné !*\n📦 Réf : *${ref}*\n👤 ${order.customerName} — ${order.customerPhone}\n\n${items}\n\n💰 *Total : ${total}*\n💳 ${order.paymentMethod}\n\n👇 *Confirmer la commande :*\n${confirmUrl}`
+    `🆕 *Nouvelle commande Makiné !*\n📦 Réf : *${ref}*\n👤 ${order.customerName} — ${order.customerPhone}\n\n${items}\n\n💰 *Total : ${total}*\n${paymentNote}\n\n👇 *Voir dans le dashboard :*\n${dashboardUrl}\n\n_(Taper *CONF ${ref}* ici pour confirmer manuellement)_`
   )
 }
 
@@ -129,15 +134,15 @@ export async function processWhatsAppMessage(params: {
       await sendWhatsAppText(phone, `ℹ️ Commande *${ref}* déjà confirmée.`)
       return
     }
-    // Ne pas forcer paymentStatus à 'paid' pour Wave/OM — le webhook gère ça
     const isDigitalOrder = order.paymentMethod === 'wave' || order.paymentMethod === 'orange_money'
+    // Règle : Wave/OM non payée ne peut pas être confirmée
+    if (isDigitalOrder && order.paymentStatus !== 'paid') {
+      await sendWhatsAppText(phone, `⚠️ Commande *${ref}* non payée (${order.paymentMethod}). Confirmez après réception du paiement.`)
+      return
+    }
     await prisma.order.update({
       where: { id: order.id },
-      data: {
-        status: 'confirmed',
-        paymentStatus: isDigitalOrder ? order.paymentStatus : 'paid',
-        whatsappSent: true,
-      },
+      data: { status: 'confirmed', paymentStatus: 'paid', whatsappSent: true },
     })
     // Notify customer
     const total = order.currency === 'XOF'

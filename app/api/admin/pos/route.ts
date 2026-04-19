@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         totalAmount,
         paymentMethod: paymentMethod || 'cash',
         paymentStatus: isDigital ? 'pending' : 'paid',
-        status: isDigital ? 'confirmed' : 'delivered',
+        status: isDigital ? 'new' : 'delivered',
         notes: notes || `Vente caisse — ${paymentMethod}`,
         items: {
           create: items.map((item: { productId: string; quantity: number; price: number }) => ({

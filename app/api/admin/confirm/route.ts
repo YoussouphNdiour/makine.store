@@ -42,14 +42,23 @@ export async function GET(req: Request) {
   }
 
   // ── Confirm order ──────────────────────────────────────────────────────────
-  // Ne pas forcer paymentStatus à 'paid' pour les paiements Wave/OM :
-  // le webhook ou /api/payment/verify s'en chargent quand le paiement arrive.
   const isDigital = order.paymentMethod === 'wave' || order.paymentMethod === 'orange_money'
+
+  // Règle : une commande Wave/OM ne peut pas être confirmée tant qu'elle n'est pas payée.
+  // Le webhook ou /api/payment/verify mettent à jour paymentStatus quand le paiement arrive.
+  if (isDigital && order.paymentStatus !== 'paid') {
+    return new Response(
+      `Commande ${ref} non payée — confirmez après réception du paiement Wave/OM.`,
+      { status: 422 }
+    )
+  }
+
   await prisma.order.update({
     where: { id: order.id },
     data: {
       status: 'confirmed',
-      paymentStatus: isDigital ? order.paymentStatus : 'paid',
+      // Pour WhatsApp/cash : marquer comme payé. Pour Wave/OM : déjà payé (vérifié ci-dessus).
+      paymentStatus: 'paid',
       whatsappSent: true,
     },
   })
