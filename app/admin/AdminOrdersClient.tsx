@@ -76,7 +76,7 @@ type Order = {
   paymentStatus: string
   status: string
   whatsappSent: boolean
-  createdAt: Date
+  createdAt: string
   items: { id: string; quantity: number; price: number; product: { name: string } }[]
 }
 

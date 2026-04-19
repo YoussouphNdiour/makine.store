@@ -315,7 +315,7 @@ export default async function AdminPage({
 
         {/* ── Orders table (client component with search) ─────────────── */}
         <AdminOrdersClient
-          orders={orders}
+          orders={orders.map(o => ({ ...o, createdAt: o.createdAt.toISOString() }))}
           theme={adminTheme}
           adminKey={searchParams.key ?? ''}
           paymentFilter={paymentFilter}
