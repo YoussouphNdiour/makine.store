@@ -45,6 +45,11 @@ export async function POST(req: Request) {
       ).catch(e => console.error('[WA Wave link]', e))
     }
 
+    // Stocker l'ID de session Wave pour pouvoir vérifier le paiement manuellement
+    if (checkout.id) {
+      await prisma.order.update({ where: { id: orderId }, data: { paymentRef: checkout.id } })
+    }
+
     return Response.json({ wave_launch_url: checkout.wave_launch_url })
   } catch (err) {
     console.error('[API Wave]', err)

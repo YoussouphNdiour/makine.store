@@ -1,6 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+
+const ACCENT = '#9e3d58'
+
+async function callVerify(orderId: string): Promise<string | null> {
+  try {
+    const res = await fetch('/api/payment/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId }),
+    })
+    const data = await res.json()
+    return data.paymentStatus ?? null
+  } catch {
+    return null
+  }
+}
 
 export default function PaymentStatus({
   orderId,
@@ -12,43 +28,50 @@ export default function PaymentStatus({
   paymentMethod: string
 }) {
   const [status, setStatus] = useState(initialStatus)
+  const [checking, setChecking] = useState(false)
+  const [pollStopped, setPollStopped] = useState(false)
+  const attemptsRef = useRef(0)
+
+  const isDigital = paymentMethod === 'wave' || paymentMethod === 'orange_money'
 
   useEffect(() => {
-    // Only poll if payment is still pending (Wave and Orange Money)
-    if (status === 'paid' || !['wave', 'orange_money'].includes(paymentMethod)) return
+    if (!isDigital || initialStatus === 'paid') return
 
-    let attempts = 0
-    const MAX = 20 // poll up to ~60s
-
+    // Poll /api/payment/verify (actively checks Wave/OM API) every 5s, up to 12 times (~60s)
     const interval = setInterval(async () => {
-      attempts++
-      try {
-        const res = await fetch(`/api/orders/${orderId}`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data.paymentStatus === 'paid') {
-            setStatus('paid')
-            clearInterval(interval)
-          }
-        }
-      } catch {
-        // ignore
+      attemptsRef.current++
+      const newStatus = await callVerify(orderId)
+      if (newStatus === 'paid') {
+        setStatus('paid')
+        clearInterval(interval)
+        return
       }
-      if (attempts >= MAX) clearInterval(interval)
-    }, 3000)
+      if (attemptsRef.current >= 12) {
+        clearInterval(interval)
+        setPollStopped(true)
+      }
+    }, 5000)
 
     return () => clearInterval(interval)
-  }, [orderId, paymentMethod, status])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function manualCheck() {
+    if (checking) return
+    setChecking(true)
+    const newStatus = await callVerify(orderId)
+    if (newStatus) setStatus(newStatus)
+    setChecking(false)
+  }
 
   if (status === 'paid') {
     return (
-      <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+      <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">
         ✓ Payé
       </span>
     )
   }
 
-  // WhatsApp orders are confirmed manually by admin
   if (paymentMethod === 'whatsapp') {
     return (
       <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
@@ -57,10 +80,24 @@ export default function PaymentStatus({
     )
   }
 
+  if (!isDigital) return null
+
   return (
-    <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 flex items-center gap-1">
-      <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-      En attente de confirmation...
+    <span className="ml-auto flex items-center gap-2">
+      <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 flex items-center gap-1">
+        {!pollStopped && <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />}
+        {pollStopped ? 'En attente' : 'Vérification…'}
+      </span>
+      {pollStopped && (
+        <button
+          onClick={manualCheck}
+          disabled={checking}
+          className="text-xs underline transition-opacity"
+          style={{ color: ACCENT, opacity: checking ? 0.5 : 1 }}
+        >
+          {checking ? 'Vérification…' : 'Revérifier'}
+        </button>
+      )}
     </span>
   )
 }

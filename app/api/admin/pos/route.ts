@@ -63,6 +63,11 @@ export async function POST(req: Request) {
           client_reference: order.id,
         })
 
+        // Stocker l'ID de session Wave pour pouvoir vérifier le paiement manuellement
+        if (checkout.id) {
+          await prisma.order.update({ where: { id: order.id }, data: { paymentRef: checkout.id } })
+        }
+
         if (phone.length >= 8) {
           sendWhatsAppText(
             phone,

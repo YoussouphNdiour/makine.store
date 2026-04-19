@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import { RefundButton, MarkDeliveredButton, ConfirmOrderButton } from './AdminActions'
+import { RefundButton, MarkDeliveredButton, ConfirmOrderButton, VerifyPaymentButton } from './AdminActions'
 import AdminShell from '@/components/AdminShell'
 import { ExportButton } from './ExportButton'
 
@@ -375,6 +375,10 @@ export default async function AdminPage({
 
                         {order.status === 'new' && (
                           <ConfirmOrderButton orderId={order.id} adminKey={adminPassword} />
+                        )}
+
+                        {['wave', 'orange_money'].includes(order.paymentMethod) && order.paymentStatus === 'pending' && (
+                          <VerifyPaymentButton orderId={order.id} adminKey={adminPassword} />
                         )}
 
                         {order.paymentMethod === 'wave' && order.paymentStatus === 'paid' && (

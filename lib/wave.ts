@@ -81,6 +81,15 @@ export async function createWavePayout(params: {
   return res.json()
 }
 
+export async function getWaveCheckoutSession(sessionId: string) {
+  const apiKey = requireEnv('WAVE_CHECKOUT_API_KEY')
+  const res = await fetch(`${WAVE_BASE_URL}/v1/checkout/sessions/${sessionId}`, {
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+  })
+  if (!res.ok) throw new Error(`[Wave] Session ${sessionId} introuvable (HTTP ${res.status})`)
+  return res.json()
+}
+
 export async function getWavePayoutStatus(payoutId: string) {
   const apiKey = requireEnv('WAVE_API_KEY')
   const res = await fetch(`${WAVE_BASE_URL}/v1/payout/${payoutId}`, {
