@@ -119,7 +119,11 @@ export async function POST(req: Request) {
     }
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://makine.store'
     const adminKey = process.env.ADMIN_PASSWORD ?? ''
-    const confirmUrl = `${appUrl}/api/admin/confirm?ref=${ref}&key=${adminKey}`
+    const dashboardUrl = `${appUrl}/admin?key=${adminKey}`
+    const isDigitalPay = paymentMethod === 'wave' || paymentMethod === 'orange_money'
+    const payNote = isDigitalPay
+      ? `⏳ En attente paiement ${payLabel[paymentMethod] ?? paymentMethod}`
+      : `💳 ${payLabel[paymentMethod] ?? paymentMethod}`
 
     sendWhatsAppText(
       ADMIN_NUMBER,
@@ -129,8 +133,9 @@ export async function POST(req: Request) {
       `📍 ${address ?? 'Non précisée'}\n\n` +
       `${itemsText}\n\n` +
       `💰 *Total : ${total}*\n` +
-      `💳 ${payLabel[paymentMethod] ?? paymentMethod}\n\n` +
-      `👇 *Confirmer la commande :*\n${confirmUrl}`
+      `${payNote}\n\n` +
+      `👉 *Dashboard :* ${dashboardUrl}\n` +
+      `_(CONF ${ref} pour confirmer via WA)_`
     ).catch(e => console.error('[WA Admin notify]', e))
 
     // Notify customer on WhatsApp based on payment method
