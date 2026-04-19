@@ -315,7 +315,25 @@ export default async function AdminPage({
 
         {/* ── Orders table (client component with search) ─────────────── */}
         <AdminOrdersClient
-          orders={orders.map(o => ({ ...o, createdAt: o.createdAt.toISOString() }))}
+          orders={orders.map(o => ({
+            id: o.id,
+            customerName: o.customerName,
+            customerPhone: o.customerPhone,
+            address: o.address ?? null,
+            totalAmount: o.totalAmount,
+            currency: o.currency,
+            paymentMethod: o.paymentMethod,
+            paymentStatus: o.paymentStatus,
+            status: o.status,
+            whatsappSent: o.whatsappSent,
+            createdAt: o.createdAt.toISOString(),
+            items: o.items.map(item => ({
+              id: item.id,
+              quantity: item.quantity,
+              price: item.price,
+              product: { name: item.product.name },
+            })),
+          }))}
           theme={adminTheme}
           adminKey={searchParams.key ?? ''}
           paymentFilter={paymentFilter}
