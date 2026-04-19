@@ -129,10 +129,15 @@ export async function processWhatsAppMessage(params: {
       await sendWhatsAppText(phone, `ℹ️ Commande *${ref}* déjà confirmée.`)
       return
     }
-    // Update order
+    // Ne pas forcer paymentStatus à 'paid' pour Wave/OM — le webhook gère ça
+    const isDigitalOrder = order.paymentMethod === 'wave' || order.paymentMethod === 'orange_money'
     await prisma.order.update({
       where: { id: order.id },
-      data: { status: 'confirmed', paymentStatus: 'paid', whatsappSent: true },
+      data: {
+        status: 'confirmed',
+        paymentStatus: isDigitalOrder ? order.paymentStatus : 'paid',
+        whatsappSent: true,
+      },
     })
     // Notify customer
     const total = order.currency === 'XOF'

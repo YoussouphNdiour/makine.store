@@ -9,6 +9,14 @@ export async function GET(req: Request) {
   const ref = searchParams.get('ref')?.toUpperCase()
   const key = searchParams.get('key')
 
+  // ── Block WhatsApp/bots link-preview crawlers ──────────────────────────────
+  // WhatsApp fetches GET URLs to generate previews — this would auto-confirm orders.
+  const ua = req.headers.get('user-agent') ?? ''
+  const isBot = /whatsapp|facebookexternalhit|twitterbot|linkedinbot|slackbot|discord|telegram|bot|crawler|spider|preview/i.test(ua)
+  if (isBot) {
+    return new Response('OK', { status: 200 })
+  }
+
   if (key !== process.env.ADMIN_PASSWORD) {
     return new Response('Non autorisé', { status: 401 })
   }
@@ -33,10 +41,17 @@ export async function GET(req: Request) {
     redirect(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://makine.store'}/admin?key=${key}&confirmed=${ref}`)
   }
 
-  // Confirm order
+  // ── Confirm order ──────────────────────────────────────────────────────────
+  // Ne pas forcer paymentStatus à 'paid' pour les paiements Wave/OM :
+  // le webhook ou /api/payment/verify s'en chargent quand le paiement arrive.
+  const isDigital = order.paymentMethod === 'wave' || order.paymentMethod === 'orange_money'
   await prisma.order.update({
     where: { id: order.id },
-    data: { status: 'confirmed', paymentStatus: 'paid', whatsappSent: true },
+    data: {
+      status: 'confirmed',
+      paymentStatus: isDigital ? order.paymentStatus : 'paid',
+      whatsappSent: true,
+    },
   })
 
   // Send WA confirmation to customer
